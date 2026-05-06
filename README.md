@@ -19,7 +19,7 @@
   <img src="https://img.shields.io/badge/coverage-80%25-brightgreen?style=flat-square" alt="Test Coverage 80%" />
   <img src="https://img.shields.io/badge/python-3.12-3776ab?style=flat-square&logo=python&logoColor=white" alt="Python 3.12" />
   <img src="https://img.shields.io/badge/vue-3-42b883?style=flat-square&logo=vue.js&logoColor=white" alt="Vue 3" />
-  <a href="https://github.com/cagatayuresin/observer-lite/pkgs/container/observer-lite">
+  <a href="https://github.com/users/cagatayuresin/packages/container/package/observer-lite">
     <img src="https://img.shields.io/badge/docker-ghcr.io-2496ed?style=flat-square&logo=docker&logoColor=white" alt="Docker Image on GHCR" />
   </a>
 </p>
