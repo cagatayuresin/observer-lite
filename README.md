@@ -10,8 +10,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/cagatayuresin/observer-lite/releases/tag/v0.1.0">
-    <img src="https://img.shields.io/badge/version-0.1.0-blue?style=flat-square" alt="Version 0.1.0" />
+  <a href="https://github.com/cagatayuresin/observer-lite/releases/tag/v0.2.0">
+    <img src="https://img.shields.io/badge/version-0.2.0-blue?style=flat-square" alt="Version 0.2.0" />
   </a>
   <a href="LICENSE">
     <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="MIT License" />
@@ -272,12 +272,12 @@ ghcr.io/cagatayuresin/observer-lite:main
 Release tags include:
 
 ```text
-ghcr.io/cagatayuresin/observer-lite:0.1.0
-ghcr.io/cagatayuresin/observer-lite:v0.1.0
-ghcr.io/cagatayuresin/observer-lite:0.1
+ghcr.io/cagatayuresin/observer-lite:0.2.0
+ghcr.io/cagatayuresin/observer-lite:v0.2.0
+ghcr.io/cagatayuresin/observer-lite:0.2
 ```
 
-When pushing a Git tag, use the `v`-prefixed form that matches `VERSION`, for example `v0.1.0`.
+When pushing a Git tag, use the `v`-prefixed form that matches `VERSION`, for example `v0.2.0`.
 
 ---
 

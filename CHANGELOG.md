@@ -46,9 +46,18 @@ Observer Lite uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.2.0] — 2026-05-06
+### Added
+- Feature: Added multi-select monitor assignment on Group creation/edit form.
+- Feature: Added silent notification configuration option for Telegram channels.
+
+### Fixed
+- Bugfix: Allow clearing optional fields (like Response Body Match) on Monitor edit.
+
 ## [0.1.0] — 2026-05-05
 
 Initial release. See [Unreleased] for the full feature list — all items above ship in 0.1.0.
 
-[Unreleased]: https://github.com/cagatayuresin/observer-lite/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/cagatayuresin/observer-lite/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/cagatayuresin/observer-lite/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/cagatayuresin/observer-lite/releases/tag/v0.1.0

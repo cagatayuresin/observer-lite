@@ -14,7 +14,33 @@
       :error="error"
       @submit="handleSubmit"
       @cancel="router.push('/dashboard')"
+      @request-new-group="showGroupForm = true"
     />
+
+    <!-- Inline Group Form -->
+    <Teleport to="body">
+      <div v-if="showGroupForm" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
+        <div class="card w-full max-w-sm border border-surface-700 shadow-xl overflow-hidden">
+          <div class="px-4 py-3 border-b border-surface-700">
+            <h2 class="text-base font-semibold text-white">New Group</h2>
+          </div>
+          <form @submit.prevent="handleCreateGroup" class="p-6 space-y-4">
+            <div>
+              <label class="label">Group Name *</label>
+              <input v-model="newGroupForm.name" class="input" required placeholder="e.g. Production" />
+            </div>
+            <div>
+              <label class="label">Description</label>
+              <input v-model="newGroupForm.description" class="input" placeholder="Optional" />
+            </div>
+            <div class="flex gap-3 mt-6">
+              <button type="submit" class="btn-primary flex-1" :disabled="savingGroup">Create</button>
+              <button type="button" class="btn-ghost flex-1" @click="showGroupForm = false">Cancel</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -38,6 +64,10 @@ const saving = ref(false)
 const error = ref('')
 const groups = ref<{ id: number; name: string }[]>([])
 
+const showGroupForm = ref(false)
+const savingGroup = ref(false)
+const newGroupForm = ref({ name: '', description: '' })
+
 const form = ref({
   name: '',
   url: '',
@@ -60,6 +90,25 @@ const form = ref({
   alerts_enabled: true,
   heartbeat_grace_seconds: 60,
 })
+
+async function handleCreateGroup() {
+  savingGroup.value = true
+  try {
+    const { data } = await groupsApi.create({
+      name: newGroupForm.value.name,
+      description: newGroupForm.value.description || null,
+    })
+    groups.value.push(data)
+    form.value.group_id = data.id
+    showGroupForm.value = false
+    newGroupForm.value = { name: '', description: '' }
+    toast.success('Group created')
+  } catch (e: any) {
+    toast.error(e.response?.data?.detail || 'Failed to create group')
+  } finally {
+    savingGroup.value = false
+  }
+}
 
 onMounted(async () => {
   const [{ data: grps }] = await Promise.all([groupsApi.list()])
@@ -106,11 +155,12 @@ async function handleSubmit() {
     if (isEdit.value) {
       await monitorsApi.update(monitorId.value, payload)
       toast.success('Monitor updated')
+      router.push(`/monitors/${monitorId.value}`)
     } else {
-      await monitorsApi.create(payload)
+      const resp = await monitorsApi.create(payload)
       toast.success('Monitor created')
+      router.push(`/monitors/${resp.data.id}`)
     }
-    router.push('/dashboard')
   } catch (e: unknown) {
     const detail = (e as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail
     error.value = typeof detail === 'string' ? detail : JSON.stringify(detail) ?? 'Save failed'

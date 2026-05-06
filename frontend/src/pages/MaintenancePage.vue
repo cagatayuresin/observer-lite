@@ -26,14 +26,20 @@
               <label class="label">Name</label>
               <input v-model="form.name" class="input" placeholder="Planned maintenance" />
             </div>
-            <div class="grid grid-cols-2 gap-3">
+            <div class="space-y-4">
               <div>
-                <label class="label">Start</label>
-                <input v-model="form.starts_at" type="datetime-local" class="input" />
+                <label class="label">Start Date & Time</label>
+                <div class="flex gap-2">
+                  <input v-model="form.start_date" type="date" class="input flex-1" />
+                  <input v-model="form.start_time" type="time" class="input w-32" />
+                </div>
               </div>
               <div>
-                <label class="label">End</label>
-                <input v-model="form.ends_at" type="datetime-local" class="input" />
+                <label class="label">End Date & Time</label>
+                <div class="flex gap-2">
+                  <input v-model="form.end_date" type="date" class="input flex-1" />
+                  <input v-model="form.end_time" type="time" class="input w-32" />
+                </div>
               </div>
             </div>
             <label class="flex items-center gap-2 cursor-pointer">
@@ -59,23 +65,50 @@ import { useToastStore } from '@/stores/toast'
 const toast = useToastStore()
 const windows = ref<{ id: number; name: string; starts_at: string; ends_at: string; monitor_ids: number[]; suppress_alerts: boolean }[]>([])
 const showForm = ref(false)
-const form = ref({ name: '', starts_at: '', ends_at: '', suppress_alerts: true })
+const form = ref({ name: '', start_date: '', start_time: '00:00', end_date: '', end_time: '00:00', suppress_alerts: true })
 
 onMounted(load)
 async function load() {
   const { data } = await maintenanceApi.list()
   windows.value = data
 }
-function openForm() { form.value = { name: '', starts_at: '', ends_at: '', suppress_alerts: true }; showForm.value = true }
+function openForm() { form.value = { name: '', start_date: '', start_time: '00:00', end_date: '', end_time: '00:00', suppress_alerts: true }; showForm.value = true }
 function isActive(w: typeof windows.value[number]) {
   const now = Date.now()
   return new Date(w.starts_at).getTime() <= now && now <= new Date(w.ends_at).getTime()
 }
 async function saveWindow() {
-  await maintenanceApi.create({ ...form.value, starts_at: new Date(form.value.starts_at).toISOString(), ends_at: new Date(form.value.ends_at).toISOString() })
-  toast.success('Maintenance window created')
-  showForm.value = false
-  await load()
+  if (!form.value.name || !form.value.start_date || !form.value.end_date || !form.value.start_time || !form.value.end_time) {
+    toast.error('Lütfen isim, başlangıç ve bitiş zamanını girin')
+    return
+  }
+  const startsAt = new Date(`${form.value.start_date}T${form.value.start_time}:00`)
+  const endsAt = new Date(`${form.value.end_date}T${form.value.end_time}:00`)
+  
+  if (isNaN(startsAt.getTime()) || isNaN(endsAt.getTime())) {
+    toast.error('Geçersiz tarih formatı')
+    return
+  }
+
+  if (startsAt >= endsAt) {
+    toast.error('Bitiş zamanı başlangıçtan sonra olmalıdır')
+    return
+  }
+
+  try {
+    await maintenanceApi.create({ 
+      name: form.value.name,
+      suppress_alerts: form.value.suppress_alerts,
+      starts_at: startsAt.toISOString(), 
+      ends_at: endsAt.toISOString(),
+      monitor_ids: []
+    })
+    toast.success('Maintenance window created')
+    showForm.value = false
+    await load()
+  } catch (e: any) {
+    toast.error('Oluşturulamadı')
+  }
 }
 async function deleteWindow(id: number) {
   await maintenanceApi.delete(id)

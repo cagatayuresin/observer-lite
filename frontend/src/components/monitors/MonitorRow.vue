@@ -33,6 +33,17 @@
       <p class="text-xs text-slate-500">every {{ fmtInterval(monitor.check_interval_seconds) }}</p>
     </div>
 
+    <!-- History Sparkline -->
+    <div class="hidden lg:flex items-center gap-0.5 w-40 shrink-0 h-5" title="Recent checks">
+      <div
+        v-for="h in history"
+        :key="h.id"
+        class="flex-1 h-full rounded-sm opacity-80 hover:opacity-100"
+        :class="h.status === 'up' ? 'bg-emerald-500' : 'bg-red-500'"
+      ></div>
+      <div v-if="!history.length" class="text-xs text-slate-600">No data</div>
+    </div>
+
     <!-- Actions -->
     <div class="flex gap-1 shrink-0" @click.stop>
       <button
@@ -73,10 +84,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import type { Monitor } from '@/stores/monitors'
 import { useAuthStore } from '@/stores/auth'
+import { monitorsApi } from '@/api/monitors'
 import StatusBadge from './StatusBadge.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 
@@ -85,6 +97,18 @@ const emit = defineEmits<{ 'toggle-select': []; pause: []; resume: []; delete: [
 const auth = useAuthStore()
 const router = useRouter()
 const confirmDelete = ref(false)
+const history = ref<{ id: number; status: string }[]>([])
+
+onMounted(async () => {
+  if (props.monitor.current_status !== 'pending') {
+    try {
+      const { data } = await monitorsApi.history(props.monitor.id, { limit: 40 })
+      history.value = data.reverse()
+    } catch {
+      // ignore
+    }
+  }
+})
 
 const rtColor = computed(() => {
   const rt = props.monitor.last_response_time_ms

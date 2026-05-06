@@ -2,90 +2,142 @@
   <div class="space-y-4">
     <div>
       <label class="label">Name</label>
-      <input v-model="form.name" class="input" placeholder="My Email Channel" required />
+      <input
+        :value="modelValue.name"
+        class="input"
+        :placeholder="modelValue.type === 'telegram' ? 'My Telegram Channel' : 'My Email Channel'"
+        required
+        @input="updateField('name', inputValue($event))"
+      />
     </div>
 
     <div>
       <label class="label">Type</label>
-      <select v-model="form.type" class="input">
+      <select :value="modelValue.type" class="input" @change="updateType(selectValue($event))">
         <option value="email">Email</option>
         <option value="telegram">Telegram</option>
       </select>
     </div>
 
     <!-- Email config -->
-    <template v-if="form.type === 'email'">
+    <template v-if="modelValue.type === 'email'">
       <div class="grid grid-cols-2 gap-3">
         <div>
           <label class="label">SMTP Host</label>
-          <input v-model="form.config.smtp_host" class="input" placeholder="smtp.gmail.com" />
+          <input
+            :value="modelValue.config.smtp_host"
+            class="input"
+            placeholder="smtp.gmail.com"
+            @input="updateConfig('smtp_host', inputValue($event))"
+          />
         </div>
         <div>
           <label class="label">SMTP Port</label>
-          <input v-model.number="form.config.smtp_port" type="number" class="input" placeholder="587" />
+          <input
+            :value="modelValue.config.smtp_port"
+            type="number"
+            class="input"
+            placeholder="587"
+            @input="updateConfig('smtp_port', numberValue($event, 587))"
+          />
         </div>
       </div>
       <div class="grid grid-cols-2 gap-3">
         <div>
           <label class="label">Username</label>
-          <input v-model="form.config.smtp_user" class="input" />
+          <input :value="modelValue.config.smtp_user" class="input" @input="updateConfig('smtp_user', inputValue($event))" />
         </div>
         <div>
           <label class="label">Password</label>
-          <input v-model="form.config.smtp_password_enc" type="password" class="input" />
+          <input
+            :value="modelValue.config.smtp_password_enc"
+            type="password"
+            class="input"
+            @input="updateConfig('smtp_password_enc', inputValue($event))"
+          />
         </div>
       </div>
       <div>
         <label class="label">From Address</label>
-        <input v-model="form.config.smtp_from" class="input" placeholder="alerts@example.com" />
+        <input
+          :value="modelValue.config.smtp_from"
+          class="input"
+          placeholder="alerts@example.com"
+          @input="updateConfig('smtp_from', inputValue($event))"
+        />
       </div>
       <div>
         <label class="label">Recipients (comma-separated)</label>
-        <input v-model="form.config.recipients_str" class="input" placeholder="ops@example.com, dev@example.com" />
+        <input
+          :value="modelValue.config.recipients_str"
+          class="input"
+          placeholder="ops@example.com, dev@example.com"
+          @input="updateConfig('recipients_str', inputValue($event))"
+        />
       </div>
-      <label class="flex items-center gap-2 cursor-pointer">
-        <input type="checkbox" v-model="form.config.use_tls" class="accent-brand-500" />
-        <span class="text-sm text-slate-300">Use TLS</span>
-      </label>
+      <ToggleSwitch
+        :model-value="!!modelValue.config.use_tls"
+        label="Use TLS"
+        @update:model-value="updateConfig('use_tls', $event)"
+      />
     </template>
 
     <!-- Telegram config -->
     <template v-else>
       <div>
         <label class="label">Bot Token</label>
-        <input v-model="form.config.bot_token" class="input" placeholder="123456:ABC-DEF..." />
+        <input
+          :value="modelValue.config.bot_token"
+          class="input"
+          placeholder="123456:ABC-DEF..."
+          @input="updateConfig('bot_token', inputValue($event))"
+        />
       </div>
       <div>
         <label class="label">Chat ID</label>
-        <input v-model="form.config.chat_id" class="input" placeholder="-1001234567890" />
+        <input
+          :value="modelValue.config.chat_id"
+          class="input"
+          placeholder="-1001234567890"
+          @input="updateConfig('chat_id', inputValue($event))"
+        />
       </div>
+      <ToggleSwitch
+        :model-value="!!modelValue.config.disable_notification"
+        label="Silent Notification (No sound)"
+        @update:model-value="updateConfig('disable_notification', $event)"
+      />
     </template>
 
-    <label class="flex items-center gap-2 cursor-pointer">
-      <input type="checkbox" v-model="form.is_enabled" class="accent-brand-500" />
-      <span class="text-sm text-slate-300">Enabled</span>
-    </label>
+    <ToggleSwitch
+      :model-value="modelValue.is_enabled"
+      label="Enabled"
+      @update:model-value="updateField('is_enabled', $event)"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import ToggleSwitch from '@/components/common/ToggleSwitch.vue'
+
+type ChannelType = 'email' | 'telegram'
 
 interface ConfigModel {
-  smtp_host: string
-  smtp_port: number
-  smtp_user: string
-  smtp_password_enc: string
-  smtp_from: string
-  recipients_str: string
-  use_tls: boolean
-  bot_token: string
-  chat_id: string
+  smtp_host?: string
+  smtp_port?: number
+  smtp_user?: string
+  smtp_password_enc?: string
+  smtp_from?: string
+  recipients_str?: string
+  use_tls?: boolean
+  bot_token?: string
+  chat_id?: string
+  disable_notification?: boolean
 }
 
 interface ChannelFormModel {
   name: string
-  type: string
+  type: ChannelType
   is_enabled: boolean
   config: ConfigModel
 }
@@ -98,16 +150,38 @@ const emit = defineEmits<{
   'update:modelValue': [value: ChannelFormModel]
 }>()
 
-const form = ref<ChannelFormModel>(structuredClone(props.modelValue))
+function inputValue(event: Event) {
+  return (event.target as HTMLInputElement).value
+}
 
-// Sync inward only when the parent replaces the whole object (modal open/reset),
-// not on every keystroke. Guard prevents the echo loop: emit → parent sets prop
-// → this watcher fires → emit again → …
-let ignoreNext = false
-watch(() => props.modelValue, (v) => {
-  if (ignoreNext) { ignoreNext = false; return }
-  form.value = structuredClone(v)
-})
+function selectValue(event: Event): ChannelType {
+  return (event.target as HTMLSelectElement).value as ChannelType
+}
 
-watch(form, (v) => { ignoreNext = true; emit('update:modelValue', v) }, { deep: true })
+function checkedValue(event: Event) {
+  return (event.target as HTMLInputElement).checked
+}
+
+function numberValue(event: Event, fallback: number) {
+  const value = Number((event.target as HTMLInputElement).value)
+  return Number.isFinite(value) ? value : fallback
+}
+
+function updateField<K extends keyof Omit<ChannelFormModel, 'config'>>(key: K, value: ChannelFormModel[K]) {
+  emit('update:modelValue', { ...props.modelValue, config: { ...props.modelValue.config }, [key]: value })
+}
+
+function updateType(type: ChannelType) {
+  updateField('type', type)
+}
+
+function updateConfig<K extends keyof ConfigModel>(key: K, value: ConfigModel[K]) {
+  emit('update:modelValue', {
+    ...props.modelValue,
+    config: {
+      ...props.modelValue.config,
+      [key]: value,
+    },
+  })
+}
 </script>

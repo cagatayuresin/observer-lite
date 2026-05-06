@@ -102,7 +102,19 @@ async def _dispatch(
             NotificationChannel.is_enabled.is_(True),
         )
     )
-    rows = result.all()
+    rows = list(result.all())
+
+    # Fallback for Observer Lite: if no specific mapping, use all enabled channels
+    if not rows:
+        channels_result = await db.execute(
+            select(NotificationChannel).where(NotificationChannel.is_enabled.is_(True))
+        )
+        for channel in channels_result.scalars().all():
+            class DefaultMapping:
+                on_down = True
+                on_recovery = True
+                on_ssl_warn = True
+            rows.append((DefaultMapping(), channel))
 
     tasks = []
     for mnc, channel in rows:

@@ -16,6 +16,7 @@ const router = createRouter({
         { path: 'monitors/:id', name: 'MonitorDetail', component: () => import('@/pages/MonitorDetailPage.vue') },
         { path: 'monitors/:id/edit', name: 'MonitorEdit', component: () => import('@/pages/MonitorFormPage.vue') },
         { path: 'incidents', name: 'Incidents', component: () => import('@/pages/IncidentsPage.vue') },
+        { path: 'groups', name: 'Groups', component: () => import('@/pages/GroupsPage.vue') },
         { path: 'maintenance', name: 'Maintenance', component: () => import('@/pages/MaintenancePage.vue') },
         { path: 'notifications', name: 'Notifications', component: () => import('@/pages/NotificationsPage.vue') },
         { path: 'users', name: 'Users', component: () => import('@/pages/UsersPage.vue') },

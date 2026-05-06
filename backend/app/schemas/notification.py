@@ -20,6 +20,7 @@ class ChannelOut(BaseModel):
     id: int
     name: str
     channel_type: str
+    config: str
     is_enabled: bool
     created_at: datetime
 

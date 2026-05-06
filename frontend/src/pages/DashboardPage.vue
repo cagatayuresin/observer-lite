@@ -20,25 +20,44 @@
       <StatCard label="Paused" :value="countByStatus('paused') + countByStatus('pending')" color="slate" />
     </div>
 
-    <!-- Filter bar -->
-    <div class="flex flex-wrap gap-2 mb-4">
-      <input
-        v-model="monitors.search"
-        @input="debouncedFetch"
-        type="text"
-        placeholder="Search monitors…"
-        class="input w-56"
-      />
-      <button
-        v-for="f in filters"
-        :key="f.value"
-        class="btn text-xs"
-        :class="monitors.statusFilter === f.value ? 'btn-primary' : 'btn-ghost'"
-        @click="setFilter(f.value)"
-      >{{ f.label }}</button>
-      <button v-if="auth.isAdmin && selectedIds.length" class="btn-danger text-xs ml-auto" @click="bulkDisable">
-        Disable {{ selectedIds.length }}
-      </button>
+    <!-- Advanced Filter Panel -->
+    <div class="card p-4 mb-6">
+      <div class="flex flex-col md:flex-row gap-4 items-end">
+        <div class="flex-1 w-full">
+          <label class="label text-xs">Search</label>
+          <div class="relative">
+            <svg class="w-4 h-4 absolute left-3 top-2.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            <input
+              v-model="monitors.search"
+              @input="debouncedFetch"
+              type="text"
+              placeholder="Search monitors by name or URL…"
+              class="input w-full pl-9"
+            />
+          </div>
+        </div>
+        
+        <div class="w-full md:w-48">
+          <label class="label text-xs">Group</label>
+          <select v-model="monitors.groupFilter" @change="debouncedFetch" class="input w-full">
+            <option :value="null">All Groups</option>
+            <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.name }}</option>
+          </select>
+        </div>
+
+        <div class="w-full md:w-48">
+          <label class="label text-xs">Status</label>
+          <select v-model="monitors.statusFilter" @change="debouncedFetch" class="input w-full">
+            <option v-for="f in filters" :key="f.value" :value="f.value">{{ f.label }}</option>
+          </select>
+        </div>
+
+        <div class="flex gap-2">
+          <button v-if="auth.isAdmin && selectedIds.length" class="btn-danger h-[38px] px-4" @click="bulkDisable">
+            Disable ({{ selectedIds.length }})
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Monitor list -->
@@ -68,7 +87,7 @@ import { RouterLink } from 'vue-router'
 import { useMonitorStore } from '@/stores/monitors'
 import { useAuthStore } from '@/stores/auth'
 import { useToastStore } from '@/stores/toast'
-import { monitorsApi } from '@/api/monitors'
+import { monitorsApi, groupsApi } from '@/api'
 import MonitorRow from '@/components/monitors/MonitorRow.vue'
 import StatCard from '@/components/monitors/StatCard.vue'
 import type { Monitor } from '@/stores/monitors'
@@ -77,6 +96,7 @@ const monitors = useMonitorStore()
 const auth = useAuthStore()
 const toast = useToastStore()
 const selectedIds = ref<number[]>([])
+const groups = ref<{ id: number; name: string }[]>([])
 
 const filters = [
   { label: 'All', value: '' },
@@ -86,7 +106,11 @@ const filters = [
   { label: 'Paused', value: 'paused' },
 ]
 
-onMounted(() => monitors.fetchMonitors())
+onMounted(async () => {
+  monitors.fetchMonitors()
+  const { data } = await groupsApi.list()
+  groups.value = data
+})
 
 function countByStatus(s: string) {
   return monitors.monitors.filter((m) => m.current_status === s).length
@@ -96,11 +120,6 @@ let debounceTimer: ReturnType<typeof setTimeout>
 function debouncedFetch() {
   clearTimeout(debounceTimer)
   debounceTimer = setTimeout(() => monitors.fetchMonitors(), 300)
-}
-
-function setFilter(v: string) {
-  monitors.statusFilter = v
-  monitors.fetchMonitors()
 }
 
 function toggleSelect(id: number) {

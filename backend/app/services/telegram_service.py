@@ -23,12 +23,18 @@ async def send_telegram(channel_config_json: str, message: str) -> bool:
         cfg = json.loads(channel_config_json)
         bot_token = cfg.get("bot_token", "")
         chat_id = cfg.get("chat_id", "")
+        disable_notification = cfg.get("disable_notification", False)
         if not bot_token or not chat_id:
             return False
 
         url = _TELEGRAM_API.format(token=bot_token)
         async with httpx.AsyncClient(timeout=10) as client:
-            resp = await client.post(url, json={"chat_id": chat_id, "text": message, "parse_mode": "HTML"})
+            resp = await client.post(url, json={
+                "chat_id": chat_id,
+                "text": message,
+                "parse_mode": "HTML",
+                "disable_notification": disable_notification,
+            })
             return resp.status_code == 200
     except Exception as e:
         logger.error("Telegram send failed: %s", e)

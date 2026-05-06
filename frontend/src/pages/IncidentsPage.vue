@@ -16,7 +16,7 @@
         </span>
         <div class="flex-1 min-w-0">
           <RouterLink :to="`/monitors/${inc.monitor_id}`" class="text-sm font-medium text-white hover:text-brand-400">
-            Monitor #{{ inc.monitor_id }}
+            {{ monitorNames[inc.monitor_id] || ('Monitor #' + inc.monitor_id) }}
           </RouterLink>
           <p class="text-xs text-slate-500 mt-0.5">{{ inc.root_cause || 'Unknown cause' }}</p>
           <p class="text-xs text-slate-600 mt-0.5">
@@ -36,10 +36,12 @@
 import { onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { incidentsApi } from '@/api/index'
+import { monitorsApi } from '@/api/monitors'
 import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
 const incidents = ref<{ id: number; monitor_id: number; started_at: string; resolved_at: string | null; root_cause: string | null; duration_seconds: number | null; acknowledged_at: string | null }[]>([])
+const monitorNames = ref<Record<number, string>>({})
 const loading = ref(false)
 const openOnly = ref(false)
 
@@ -47,8 +49,18 @@ onMounted(load)
 
 async function load() {
   loading.value = true
-  const { data } = await incidentsApi.list({ open_only: openOnly.value })
-  incidents.value = data
+  const [{ data: incData }, { data: monData }] = await Promise.all([
+    incidentsApi.list({ open_only: openOnly.value }),
+    monitorsApi.list()
+  ])
+  
+  const map: Record<number, string> = {}
+  for (const m of monData) {
+    map[m.id] = m.name
+  }
+  monitorNames.value = map
+  
+  incidents.value = incData
   loading.value = false
 }
 

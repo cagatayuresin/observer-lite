@@ -70,14 +70,14 @@ def _read_app_version() -> str:
         version_file = parent / "VERSION"
         if version_file.exists():
             return version_file.read_text(encoding="utf-8").strip()
-    return "0.1.0"
+    return "0.2.0"
 
 
 async def _seed_initial_data():
     """Create the first superadmin user and default settings on empty databases."""
     async with AsyncSessionLocal() as db:
-        result = await db.execute(select(User))
-        if result.scalar_one_or_none() is not None:
+        result = await db.execute(select(User).limit(1))
+        if result.scalars().first() is not None:
             return  # Already seeded
 
         logger.info("First run detected — creating superadmin user")

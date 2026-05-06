@@ -16,10 +16,11 @@
     <nav class="flex-1 px-2 py-4 space-y-0.5 overflow-y-auto">
       <NavItem to="/dashboard" icon="grid">Dashboard</NavItem>
       <NavItem to="/incidents" icon="alert">Incidents</NavItem>
+      <NavItem to="/groups" icon="folder">Groups</NavItem>
       <NavItem to="/maintenance" icon="wrench">Maintenance</NavItem>
       <NavItem to="/notifications" icon="bell">Channels</NavItem>
       <div class="pt-4 pb-1 px-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">Admin</div>
-      <NavItem v-if="auth.isAdmin" to="/users" icon="users">Users</NavItem>
+      <NavItem v-if="auth.isSuperAdmin" to="/users" icon="users">Users</NavItem>
       <NavItem v-if="auth.isAdmin" to="/api-keys" icon="key">API Keys</NavItem>
       <NavItem v-if="auth.isSuperAdmin" to="/audit-log" icon="list">Audit Log</NavItem>
       <NavItem v-if="auth.isSuperAdmin" to="/settings" icon="settings">Settings</NavItem>

@@ -38,6 +38,7 @@ export const useMonitorStore = defineStore('monitors', () => {
   const loading = ref(false)
   const search = ref('')
   const statusFilter = ref('')
+  const groupFilter = ref<number | null>(null)
 
   async function fetchMonitors() {
     loading.value = true
@@ -45,6 +46,7 @@ export const useMonitorStore = defineStore('monitors', () => {
       const { data } = await monitorsApi.list({
         status: statusFilter.value || undefined,
         search: search.value || undefined,
+        group_id: groupFilter.value || undefined,
       })
       monitors.value = data
     } finally {
@@ -61,5 +63,5 @@ export const useMonitorStore = defineStore('monitors', () => {
     }
   }
 
-  return { monitors, loading, search, statusFilter, fetchMonitors, updateFromSSE }
+  return { monitors, loading, search, statusFilter, groupFilter, fetchMonitors, updateFromSSE }
 })

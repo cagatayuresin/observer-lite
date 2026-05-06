@@ -83,7 +83,7 @@ async def update_monitor(
     if not monitor:
         raise HTTPException(status_code=404, detail="Monitor not found")
 
-    update_data = body.model_dump(exclude_none=True)
+    update_data = body.model_dump(exclude_unset=True)
     for key, value in update_data.items():
         setattr(monitor, key, value)
     monitor.updated_at = _now()
@@ -110,12 +110,10 @@ async def patch_monitor(
     if not monitor:
         raise HTTPException(status_code=404, detail="Monitor not found")
 
-    if body.is_enabled is not None:
-        monitor.is_enabled = body.is_enabled
-    if body.alerts_enabled is not None:
-        monitor.alerts_enabled = body.alerts_enabled
-    if body.ssl_check_enabled is not None:
-        monitor.ssl_check_enabled = body.ssl_check_enabled
+    update_data = body.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(monitor, key, value)
+        
     monitor.updated_at = _now()
     await db.commit()
     await db.refresh(monitor)

@@ -68,6 +68,7 @@ class MonitorPatch(BaseModel):
     is_enabled: bool | None = None
     alerts_enabled: bool | None = None
     ssl_check_enabled: bool | None = None
+    group_id: int | None = None
 
 
 class MonitorOut(BaseModel):
