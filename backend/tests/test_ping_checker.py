@@ -1,6 +1,5 @@
 """Unit tests for the ping checker with mocked subprocess."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from app.checkers.ping_checker import ping_check, _extract_host
@@ -28,15 +27,14 @@ async def _run_ping(
 ):
     mock_proc = MagicMock()
     mock_proc.returncode = returncode
-    mock_proc.communicate = AsyncMock(return_value=(stdout, b""))
 
     with patch("asyncio.create_subprocess_exec", return_value=mock_proc):
         if raise_timeout:
+            mock_proc.communicate = MagicMock(return_value=object())
             with patch("asyncio.wait_for", side_effect=TimeoutError()):
                 return await ping_check("http://example.com", 5, response_time_warning_ms)
-        with patch("asyncio.wait_for", return_value=(stdout, b"")):
-            mock_proc.returncode = returncode
-            return await ping_check("http://example.com", 5, response_time_warning_ms)
+        mock_proc.communicate = AsyncMock(return_value=(stdout, b""))
+        return await ping_check("http://example.com", 5, response_time_warning_ms)
 
 
 class TestPingChecker:
@@ -52,6 +50,13 @@ class TestPingChecker:
     async def test_timeout_returns_down(self):
         result = await _run_ping(raise_timeout=True)
         assert result.status == "down"
+
+    async def test_subprocess_error_returns_down(self):
+        with patch("asyncio.create_subprocess_exec", side_effect=OSError("ping missing")):
+            result = await ping_check("http://example.com", 5, 2000)
+
+        assert result.status == "down"
+        assert "ping missing" in result.error_message
 
     async def test_rtt_parsed_from_stdout(self):
         # 5 ms RTT is below 2000 ms threshold → up

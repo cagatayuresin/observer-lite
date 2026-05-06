@@ -6,10 +6,9 @@ database via the ``db`` fixture, which rolls back all changes after each test.
 """
 
 import os
-import pytest
 import pytest_asyncio
 from datetime import datetime, timezone
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
 # Point to in-memory SQLite before any app code loads settings
 os.environ.setdefault("DATABASE_PATH", ":memory:")
@@ -106,7 +105,6 @@ async def client(engine):
     The scheduler is patched out so no real checks run, and the DB engine
     is overridden to use the per-test in-memory instance.
     """
-    from app.db.session import AsyncSessionLocal
     from app import main as app_main
 
     factory = async_sessionmaker(engine, expire_on_commit=False)

@@ -1,8 +1,7 @@
 """Unit tests for the email notification service."""
 
 import json
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 from app.services.email_service import send_email
 from app.services.email_service import test_email_channel as _test_email_channel

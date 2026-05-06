@@ -5,7 +5,6 @@ patch ``AsyncSessionLocal`` with an in-memory session factory so that real
 DB I/O occurs without touching the production database.
 """
 
-import pytest
 from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -450,6 +449,32 @@ class TestInMaintenance:
         assert result is False
 
         await engine.dispose()
+
+
+# ---------------------------------------------------------------------------
+# scheduler.manager helpers
+# ---------------------------------------------------------------------------
+
+class TestSchedulerManager:
+    def test_resume_monitor_job_resumes_existing_job(self):
+        from app.scheduler.manager import resume_monitor_job
+
+        job = MagicMock()
+        with patch("app.scheduler.manager.scheduler") as mock_scheduler:
+            mock_scheduler.get_job.return_value = job
+            resume_monitor_job(7)
+
+        mock_scheduler.get_job.assert_called_once_with("monitor_7")
+        job.resume.assert_called_once()
+
+    def test_resume_monitor_job_noops_when_job_missing(self):
+        from app.scheduler.manager import resume_monitor_job
+
+        with patch("app.scheduler.manager.scheduler") as mock_scheduler:
+            mock_scheduler.get_job.return_value = None
+            resume_monitor_job(7)
+
+        mock_scheduler.get_job.assert_called_once_with("monitor_7")
 
 
 # ---------------------------------------------------------------------------

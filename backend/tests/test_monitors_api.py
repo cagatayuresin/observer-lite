@@ -1,6 +1,5 @@
 """Integration tests for /api/monitors/* endpoints."""
 
-import pytest
 
 
 async def _login(client):

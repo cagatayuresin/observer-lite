@@ -1,7 +1,6 @@
 """Tests for notification_service: down, recovery, SSL warning dispatch."""
 
 import json
-import pytest
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, patch
 

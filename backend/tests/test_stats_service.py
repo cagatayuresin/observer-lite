@@ -1,6 +1,5 @@
 """Tests for stats_service: uptime %, avg RT, incident counts."""
 
-import pytest
 from datetime import datetime, timedelta, timezone
 
 from app.db.models import CheckResult, Incident, Monitor

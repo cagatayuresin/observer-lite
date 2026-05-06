@@ -1,6 +1,5 @@
 """Integration tests for /api/incidents/* endpoints."""
 
-import pytest
 from datetime import datetime, timezone
 
 from app.db.models import Incident, Monitor

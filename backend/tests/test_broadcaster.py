@@ -1,7 +1,6 @@
 """Unit tests for the SSE broadcaster."""
 
 import asyncio
-import pytest
 
 from app.sse.broadcaster import SSEBroadcaster
 
@@ -56,7 +55,7 @@ class TestSSEBroadcaster:
         # subscribe should return immediately without adding a queue
         gen = b.subscribe()
         try:
-            msg = await asyncio.wait_for(gen.__anext__(), timeout=0.1)
+            await asyncio.wait_for(gen.__anext__(), timeout=0.1)
         except (asyncio.TimeoutError, StopAsyncIteration):
             pass  # expected — no message is yielded when at capacity
 

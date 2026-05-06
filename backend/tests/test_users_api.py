@@ -1,6 +1,5 @@
 """Integration tests for /api/users/* endpoints (superadmin only)."""
 
-import pytest
 
 
 async def _admin_headers(client):

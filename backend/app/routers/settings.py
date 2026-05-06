@@ -22,8 +22,11 @@ _SENSITIVE_KEYS = {"smtp_password_enc"}
 
 @router.get("")
 async def get_settings(_: User = Depends(require_superadmin), db: AsyncSession = Depends(get_db)):
+    """Return all application settings with sensitive values masked."""
     result = await db.execute(select(AppSetting))
     settings = result.scalars().all()
+    # Settings are intentionally schemaless for now, but secrets must never be
+    # echoed back to the browser once saved.
     return {s.key: ("***" if s.key in _SENSITIVE_KEYS else s.value) for s in settings}
 
 
@@ -33,6 +36,7 @@ async def update_settings(
     current_user: User = Depends(require_superadmin),
     db: AsyncSession = Depends(get_db),
 ):
+    """Create or update application settings from a partial key-value payload."""
     now = datetime.now(timezone.utc)
     for key, value in body.items():
         result = await db.execute(select(AppSetting).where(AppSetting.key == key))
@@ -49,9 +53,11 @@ async def update_settings(
 
 @router.post("/test-smtp")
 async def test_smtp(_: User = Depends(require_superadmin), db: AsyncSession = Depends(get_db)):
+    """Send a synthetic email notification using the saved SMTP settings."""
     result = await db.execute(select(AppSetting).where(AppSetting.key.in_(["smtp_host", "smtp_port", "smtp_user", "smtp_password_enc", "smtp_from"])))
     settings_rows = result.scalars().all()
     cfg = {s.key: s.value for s in settings_rows}
+    # Import lazily so normal settings reads do not pull in SMTP dependencies.
     import json  # noqa: PLC0415 — deferred to keep top-level imports clean
     from app.services.email_service import test_email_channel
     ok = await test_email_channel(json.dumps({

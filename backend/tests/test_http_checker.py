@@ -1,9 +1,8 @@
 """Unit tests for the HTTP checker with mocked httpx.AsyncClient."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from app.checkers.http_checker import http_check
+from app.checkers.http_checker import close_http_client, get_http_client, http_check
 import httpx
 
 
@@ -50,6 +49,18 @@ async def _run_check(
 
 
 class TestHttpChecker:
+    async def test_shared_client_lifecycle(self):
+        await close_http_client()
+
+        first = get_http_client()
+        second = get_http_client()
+
+        assert first is second
+        assert first.is_closed is False
+
+        await close_http_client()
+        assert first.is_closed is True
+
     async def test_200_up(self):
         result = await _run_check(mock_response=_make_response(200))
         assert result.status == "up"

@@ -1,6 +1,5 @@
 """Integration tests for the incident state machine in check_service.py."""
 
-import pytest
 from datetime import datetime, timezone
 from unittest.mock import patch, AsyncMock
 

@@ -1,3 +1,10 @@
+"""Maintenance window endpoints.
+
+Maintenance windows suppress alert noise during planned downtime.  The window
+record stores the time range and behavior, while the join table links it to the
+monitors that should be muted.
+"""
+
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -14,6 +21,7 @@ router = APIRouter(prefix="/api/maintenance", tags=["maintenance"])
 
 @router.get("", response_model=list[MaintenanceOut])
 async def list_windows(_: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    """Return maintenance windows, newest first."""
     result = await db.execute(select(MaintenanceWindow).order_by(MaintenanceWindow.starts_at.desc()))
     windows = result.scalars().all()
     return [await _to_out(db, w) for w in windows]
@@ -21,6 +29,7 @@ async def list_windows(_: User = Depends(get_current_user), db: AsyncSession = D
 
 @router.post("", response_model=MaintenanceOut, status_code=201)
 async def create_window(body: MaintenanceCreate, current_user: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
+    """Create a maintenance window and attach the selected monitors."""
     now = datetime.now(timezone.utc)
     window = MaintenanceWindow(
         name=body.name,
@@ -33,6 +42,7 @@ async def create_window(body: MaintenanceCreate, current_user: User = Depends(re
     )
     db.add(window)
     await db.flush()
+    # Flush first so the generated window ID is available for join rows.
     for mid in body.monitor_ids:
         db.add(MaintenanceWindowMonitor(window_id=window.id, monitor_id=mid))
     await db.commit()
@@ -42,6 +52,7 @@ async def create_window(body: MaintenanceCreate, current_user: User = Depends(re
 
 @router.get("/{window_id}", response_model=MaintenanceOut)
 async def get_window(window_id: int, _: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    """Return one maintenance window with its monitor IDs."""
     result = await db.execute(select(MaintenanceWindow).where(MaintenanceWindow.id == window_id))
     window = result.scalar_one_or_none()
     if not window:
@@ -51,6 +62,7 @@ async def get_window(window_id: int, _: User = Depends(get_current_user), db: As
 
 @router.put("/{window_id}", response_model=MaintenanceOut)
 async def update_window(window_id: int, body: MaintenanceUpdate, _: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
+    """Patch a maintenance window and optionally replace its monitor list."""
     result = await db.execute(select(MaintenanceWindow).where(MaintenanceWindow.id == window_id))
     window = result.scalar_one_or_none()
     if not window:
@@ -66,10 +78,8 @@ async def update_window(window_id: int, body: MaintenanceUpdate, _: User = Depen
     if body.suppress_alerts is not None:
         window.suppress_alerts = body.suppress_alerts
     if body.monitor_ids is not None:
-        await db.execute(
-            select(MaintenanceWindowMonitor).where(MaintenanceWindowMonitor.window_id == window_id)
-        )
-        # Delete existing
+        # Monitor assignments are treated as a full replacement to keep the API
+        # simple and deterministic for clients.
         from sqlalchemy import delete as sa_delete
         await db.execute(sa_delete(MaintenanceWindowMonitor).where(MaintenanceWindowMonitor.window_id == window_id))
         for mid in body.monitor_ids:
@@ -81,6 +91,7 @@ async def update_window(window_id: int, body: MaintenanceUpdate, _: User = Depen
 
 @router.delete("/{window_id}", status_code=204)
 async def delete_window(window_id: int, _: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
+    """Delete a maintenance window and its join rows."""
     result = await db.execute(select(MaintenanceWindow).where(MaintenanceWindow.id == window_id))
     window = result.scalar_one_or_none()
     if not window:
@@ -90,6 +101,7 @@ async def delete_window(window_id: int, _: User = Depends(require_admin), db: As
 
 
 async def _to_out(db: AsyncSession, window: MaintenanceWindow) -> MaintenanceOut:
+    """Convert a maintenance window ORM row into the public response schema."""
     result = await db.execute(
         select(MaintenanceWindowMonitor.monitor_id).where(MaintenanceWindowMonitor.window_id == window.id)
     )

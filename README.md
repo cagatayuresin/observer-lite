@@ -252,6 +252,23 @@ pytest tests/ --cov=app -q
 
 ---
 
+## Docker Images
+
+The GitHub Actions workflow publishes the single production image to GHCR on pushes to `main`, `v*` tags, or manual workflow runs. Image version tags are read from the root [`VERSION`](VERSION) file, so bump that file before cutting a release.
+
+Published tags include:
+
+```text
+ghcr.io/cagatayuresin/observer-lite:latest
+ghcr.io/cagatayuresin/observer-lite:0.1.0
+ghcr.io/cagatayuresin/observer-lite:v0.1.0
+ghcr.io/cagatayuresin/observer-lite:0.1
+```
+
+When pushing a Git tag, use the `v`-prefixed form that matches `VERSION`, for example `v0.1.0`.
+
+---
+
 ## Security
 
 Observer Lite is designed with security in mind:

@@ -1,8 +1,7 @@
 """Tests for the data retention service."""
 
-import pytest
 from datetime import datetime, timedelta, timezone
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import patch
 
 from app.db.models import AppSetting, CheckResult, Monitor
 from app.services.retention_service import run_retention_cleanup

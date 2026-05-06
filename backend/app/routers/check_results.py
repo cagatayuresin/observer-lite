@@ -1,3 +1,10 @@
+"""Read-only check result history endpoints.
+
+The dashboard and monitor detail pages use these endpoints to display recent
+probe history.  Writes are intentionally kept in ``services.check_service`` so
+that history creation and incident processing stay transactional.
+"""
+
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, Query
@@ -21,7 +28,10 @@ async def list_results(
     _: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    """Return recent check results, optionally constrained by monitor and time."""
     q = select(CheckResult).order_by(CheckResult.checked_at.desc()).limit(limit)
+    # Filters are applied only when present so the endpoint remains useful as
+    # both a global activity feed and a single-monitor history view.
     if monitor_id:
         q = q.where(CheckResult.monitor_id == monitor_id)
     if from_dt:

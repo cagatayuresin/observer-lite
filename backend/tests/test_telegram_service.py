@@ -1,7 +1,6 @@
 """Unit tests for the Telegram notification service."""
 
 import json
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
 

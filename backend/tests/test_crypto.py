@@ -30,7 +30,6 @@ class TestEncryptDecrypt:
         assert a != b
 
     def test_tampered_ciphertext_raises(self):
-        from cryptography.fernet import InvalidToken
         with pytest.raises(Exception):  # InvalidToken or similar
             decrypt("not-a-valid-fernet-token")
 

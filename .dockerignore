@@ -13,7 +13,6 @@ LICENSE
 SECURITY.md
 CONTRIBUTING.md
 CHANGELOG.md
-VERSION
 
 # ── Python ────────────────────────────────────────────────────────────────────
 backend/.venv
@@ -39,7 +38,6 @@ frontend/.turbo
 # ── Test artefacts ────────────────────────────────────────────────────────────
 backend/tests
 backend/pytest.ini
-backend/pyproject.toml   # deps already installed; toml not needed at runtime
 
 # ── Local data & secrets ──────────────────────────────────────────────────────
 *.db

@@ -1,7 +1,5 @@
 """Integration tests for groups, heartbeat, notifications, settings, and API keys endpoints."""
 
-import pytest
-from datetime import datetime, timezone
 from unittest.mock import AsyncMock, patch
 
 
@@ -32,11 +30,21 @@ class TestGroups:
         assert resp.status_code == 200
         assert resp.json()["name"] == "New"
 
+    async def test_update_missing_group(self, client):
+        headers = await _admin_headers(client)
+        resp = await client.put("/api/groups/99999", json={"name": "Missing"}, headers=headers)
+        assert resp.status_code == 404
+
     async def test_delete_group(self, client):
         headers = await _admin_headers(client)
         created = (await client.post("/api/groups", json={"name": "Del"}, headers=headers)).json()
         resp = await client.delete(f"/api/groups/{created['id']}", headers=headers)
         assert resp.status_code == 204
+
+    async def test_delete_missing_group(self, client):
+        headers = await _admin_headers(client)
+        resp = await client.delete("/api/groups/99999", headers=headers)
+        assert resp.status_code == 404
 
 
 # ── Notification Channels ─────────────────────────────────────────────────────
@@ -176,6 +184,80 @@ class TestHeartbeat:
         assert resp.status_code == 404
 
 
+# ── Import / Export ───────────────────────────────────────────────────────────
+
+class TestImportExport:
+    async def _create_monitor(self, client, headers, **overrides):
+        payload = {
+            "name": "Exported Monitor",
+            "url": "https://export.example.com",
+            "monitor_type": "http_get",
+            "check_interval_seconds": 60,
+            "timeout_seconds": 10,
+            "retry_count": 3,
+            "expected_status_codes": "2xx",
+            **overrides,
+        }
+        return await client.post("/api/monitors", json=payload, headers=headers)
+
+    async def test_export_monitors(self, client):
+        headers = await _admin_headers(client)
+        created = await self._create_monitor(client, headers)
+        assert created.status_code == 201
+
+        resp = await client.get("/api/export/monitors", headers=headers)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["version"] == 1
+        assert data["monitors"][0]["name"] == "Exported Monitor"
+        assert data["monitors"][0]["expected_status_codes"] == "2xx"
+        assert "exported_at" in data
+
+    async def test_import_monitors_creates_enabled_jobs(self, client):
+        headers = await _admin_headers(client)
+        payload = {
+            "monitors": [
+                {
+                    "name": "Imported Monitor",
+                    "url": "https://import.example.com",
+                    "monitor_type": "http_get",
+                    "check_interval_seconds": 120,
+                    "timeout_seconds": 10,
+                    "retry_count": 2,
+                    "retry_interval_seconds": 15,
+                    "alert_cooldown_seconds": 300,
+                    "request_headers": None,
+                    "request_body": None,
+                    "expected_status_codes": "2xx",
+                    "expected_body_type": None,
+                    "expected_body_value": None,
+                    "response_time_warning_ms": 1500,
+                    "ssl_check_enabled": True,
+                    "ssl_expiry_warning_days": 14,
+                    "alerts_enabled": True,
+                    "heartbeat_grace_seconds": 60,
+                }
+            ]
+        }
+
+        with patch("app.routers.import_export.upsert_monitor_job") as mock_upsert:
+            resp = await client.post("/api/import/monitors", json=payload, headers=headers)
+
+        assert resp.status_code == 200
+        assert resp.json() == {"imported": 1}
+        mock_upsert.assert_called_once()
+
+        listed = await client.get("/api/monitors?search=Imported", headers=headers)
+        assert listed.status_code == 200
+        assert listed.json()[0]["name"] == "Imported Monitor"
+
+    async def test_import_empty_payload(self, client):
+        headers = await _admin_headers(client)
+        resp = await client.post("/api/import/monitors", json={}, headers=headers)
+        assert resp.status_code == 200
+        assert resp.json() == {"imported": 0}
+
+
 # ── Settings ─────────────────────────────────────────────────────────────────
 
 class TestSettings:
@@ -188,6 +270,54 @@ class TestSettings:
         headers = await _admin_headers(client)
         resp = await client.put("/api/settings", json={"data_retention_days": "60"}, headers=headers)
         assert resp.status_code == 200
+
+    async def test_settings_mask_sensitive_values_and_update_existing(self, client):
+        headers = await _admin_headers(client)
+        created = await client.put(
+            "/api/settings",
+            json={"smtp_password_enc": "encrypted-secret", "app_base_url": "https://observer.example.com"},
+            headers=headers,
+        )
+        assert created.status_code == 200
+
+        updated = await client.put("/api/settings", json={"app_base_url": "https://status.example.com"}, headers=headers)
+        assert updated.status_code == 200
+
+        resp = await client.get("/api/settings", headers=headers)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["smtp_password_enc"] == "***"
+        assert data["app_base_url"] == "https://status.example.com"
+
+    async def test_smtp_test_success(self, client):
+        headers = await _admin_headers(client)
+        await client.put(
+            "/api/settings",
+            json={
+                "smtp_host": "smtp.example.com",
+                "smtp_port": "587",
+                "smtp_user": "observer",
+                "smtp_password_enc": "encrypted",
+                "smtp_from": "observer@example.com",
+            },
+            headers=headers,
+        )
+
+        with patch("app.services.email_service.test_email_channel", new_callable=AsyncMock) as mock_test:
+            mock_test.return_value = True
+            resp = await client.post("/api/settings/test-smtp", headers=headers)
+
+        assert resp.status_code == 200
+        assert resp.json()["message"] == "SMTP test successful"
+        assert mock_test.await_count == 1
+
+    async def test_smtp_test_failure(self, client):
+        headers = await _admin_headers(client)
+        with patch("app.services.email_service.test_email_channel", new_callable=AsyncMock) as mock_test:
+            mock_test.return_value = False
+            resp = await client.post("/api/settings/test-smtp", headers=headers)
+
+        assert resp.status_code == 502
 
 
 # ── API Keys ──────────────────────────────────────────────────────────────────

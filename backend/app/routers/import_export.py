@@ -1,3 +1,10 @@
+"""Monitor import/export endpoints for portable open-source deployments.
+
+Exports are intentionally limited to configuration fields that can be safely
+re-created on another installation.  Runtime state such as current status,
+heartbeat tokens, incidents, and check history is excluded.
+"""
+
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends
@@ -12,6 +19,8 @@ from app.scheduler.manager import upsert_monitor_job
 
 router = APIRouter(prefix="/api", tags=["import-export"])
 
+# Keep this allowlist explicit so future model fields are not accidentally
+# leaked or imported before their portability/security implications are known.
 _EXPORT_FIELDS = [
     "name", "url", "monitor_type", "check_interval_seconds", "timeout_seconds",
     "retry_count", "retry_interval_seconds", "alert_cooldown_seconds",
@@ -24,6 +33,7 @@ _EXPORT_FIELDS = [
 
 @router.get("/export/monitors")
 async def export_monitors(_: User = Depends(require_superadmin), db: AsyncSession = Depends(get_db)):
+    """Export monitor definitions as a stable JSON payload."""
     result = await db.execute(select(Monitor).order_by(Monitor.id))
     monitors = result.scalars().all()
     data = [{field: getattr(m, field) for field in _EXPORT_FIELDS} for m in monitors]
@@ -36,10 +46,13 @@ async def import_monitors(
     current_user: User = Depends(require_superadmin),
     db: AsyncSession = Depends(get_db),
 ):
+    """Import monitor definitions from the JSON format produced by export."""
     monitors_data = body.get("monitors", [])
     created = 0
     now = datetime.now(timezone.utc)
     for m_data in monitors_data:
+        # Ignore unknown keys to preserve forward compatibility between
+        # versions and to avoid mass-assigning fields such as IDs or status.
         monitor = Monitor(
             **{k: v for k, v in m_data.items() if k in _EXPORT_FIELDS},
             created_by=current_user.id,
@@ -49,6 +62,8 @@ async def import_monitors(
         db.add(monitor)
         await db.flush()
         if monitor.is_enabled:
+            # Imported enabled monitors should begin checking immediately after
+            # the transaction commits, matching newly created monitors.
             upsert_monitor_job(monitor)
         created += 1
     await db.commit()
