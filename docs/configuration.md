@@ -96,11 +96,17 @@ The bundled entrypoint already starts Uvicorn with:
 
 ## GitHub Container Registry Tags
 
-Published images use tags derived from the root `VERSION` file:
+Successful CI runs on `main` publish moving tags:
 
 | Tag | Meaning |
 | --- | --- |
 | `latest` | Latest build from the default branch. |
+| `main` | Latest build from the `main` branch. |
+
+Release tags are published only when pushing a matching `v*` Git tag. Those release tags use the root `VERSION` file:
+
+| Tag | Meaning |
+| --- | --- |
 | `0.1.0` | Exact version from `VERSION`. |
 | `v0.1.0` | Git-style version tag. |
 | `0.1` | Major/minor convenience tag. |

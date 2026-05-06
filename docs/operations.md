@@ -29,11 +29,11 @@ Docker images publish to GitHub Container Registry from the Docker workflow.
 
 Triggers:
 
-- Push to `main`
+- Successful CI run on `main`
 - Push a tag matching `v*`
 - Manual workflow dispatch
 
-Version tags come from the root `VERSION` file.
+Successful CI runs on `main` update the moving `latest` and `main` tags. Version tags come from the root `VERSION` file and are published when you push a matching `v*` Git tag.
 
 Release flow:
 
