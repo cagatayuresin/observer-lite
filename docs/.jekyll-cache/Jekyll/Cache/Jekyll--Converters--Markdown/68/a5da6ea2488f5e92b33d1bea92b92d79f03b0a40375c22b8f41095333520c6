@@ -1,0 +1,287 @@
+I"¦#<h1 id="monitors">Monitors</h1>
+
+<p>A monitor defines what Observer Lite checks, how often it checks, what counts as healthy, and when alerts should be sent.</p>
+
+<h2 id="shared-fields">Shared Fields</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Field</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Name</td>
+      <td>Human-readable label shown in the dashboard and notifications.</td>
+    </tr>
+    <tr>
+      <td>URL</td>
+      <td>Target URL, hostname, or heartbeat identifier.</td>
+    </tr>
+    <tr>
+      <td>Type</td>
+      <td>HTTP GET, HTTP POST, HTTP HEAD, ping, or heartbeat.</td>
+    </tr>
+    <tr>
+      <td>Interval</td>
+      <td>Seconds between scheduled checks.</td>
+    </tr>
+    <tr>
+      <td>Timeout</td>
+      <td>Maximum time to wait before marking a check down.</td>
+    </tr>
+    <tr>
+      <td>Retry count</td>
+      <td>Number of consecutive failures required before an incident opens.</td>
+    </tr>
+    <tr>
+      <td>Retry interval</td>
+      <td>Delay between retries where applicable.</td>
+    </tr>
+    <tr>
+      <td>Alert cooldown</td>
+      <td>Minimum time between repeated alerts for the same outage.</td>
+    </tr>
+    <tr>
+      <td>Alerts enabled</td>
+      <td>Master switch for notifications on that monitor.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="http-monitors">HTTP Monitors</h2>
+
+<p>HTTP monitors send a request and evaluate both status code and optional response body rules.</p>
+
+<p>Supported methods:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">HTTP GET</code></li>
+  <li><code class="language-plaintext highlighter-rouge">HTTP POST</code></li>
+  <li><code class="language-plaintext highlighter-rouge">HTTP HEAD</code></li>
+</ul>
+
+<p>Example:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Field</th>
+      <th>Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>URL</td>
+      <td><code class="language-plaintext highlighter-rouge">https://api.example.com/health</code></td>
+    </tr>
+    <tr>
+      <td>Expected status codes</td>
+      <td><code class="language-plaintext highlighter-rouge">2xx</code></td>
+    </tr>
+    <tr>
+      <td>Timeout</td>
+      <td><code class="language-plaintext highlighter-rouge">10</code></td>
+    </tr>
+    <tr>
+      <td>Response time warning</td>
+      <td><code class="language-plaintext highlighter-rouge">2000</code> ms</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="status-code-dsl">Status Code DSL</h2>
+
+<p>The expected status field accepts a small expression language.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Expression</th>
+      <th>Meaning</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">200</code></td>
+      <td>Exactly HTTP 200.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">2xx</code></td>
+      <td>Any 200-299 response.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">200|301</code></td>
+      <td>HTTP 200 or 301.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">2xx|301</code></td>
+      <td>Any 2xx response or 301.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">!5xx</code></td>
+      <td>Anything except 500-599.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">2xx|!503</code></td>
+      <td>Any 2xx response, or anything that is not 503.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Keep expressions simple. For most public websites and APIs, <code class="language-plaintext highlighter-rouge">2xx</code> is the clearest rule.</p>
+
+<h2 id="body-matching">Body Matching</h2>
+
+<p>Body matching is optional.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Mode</th>
+      <th>Behavior</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">contains</code></td>
+      <td>Response body must contain the expected text.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">equals</code></td>
+      <td>Response body must exactly equal the expected text.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">not_equals</code></td>
+      <td>Response body must not exactly equal the expected text.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Useful examples:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Scenario</th>
+      <th>Mode</th>
+      <th>Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Health endpoint returns JSON</td>
+      <td><code class="language-plaintext highlighter-rouge">contains</code></td>
+      <td><code class="language-plaintext highlighter-rouge">"status":"ok"</code></td>
+    </tr>
+    <tr>
+      <td>Static status page</td>
+      <td><code class="language-plaintext highlighter-rouge">contains</code></td>
+      <td><code class="language-plaintext highlighter-rouge">All systems operational</code></td>
+    </tr>
+    <tr>
+      <td>Maintenance placeholder detection</td>
+      <td><code class="language-plaintext highlighter-rouge">not_equals</code></td>
+      <td><code class="language-plaintext highlighter-rouge">maintenance</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="request-headers-and-body">Request Headers and Body</h2>
+
+<p>HTTP monitors can store custom headers as a JSON string.</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"Authorization"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Bearer example-token"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"Accept"</span><span class="p">:</span><span class="w"> </span><span class="s2">"application/json"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>For <code class="language-plaintext highlighter-rouge">HTTP POST</code>, set the request body to the payload expected by the target.</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="nl">"probe"</span><span class="p">:</span><span class="s2">"observer-lite"</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<h2 id="ping-monitors">Ping Monitors</h2>
+
+<p>Ping monitors call the system <code class="language-plaintext highlighter-rouge">ping</code> binary inside the container.</p>
+
+<p>Use ping when ICMP reachability is the signal you care about:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>example.com
+</code></pre></div></div>
+
+<p>or:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>https://example.com
+</code></pre></div></div>
+
+<p>Observer Lite extracts the hostname and runs one ICMP request.</p>
+
+<h2 id="ssl-certificate-checks">SSL Certificate Checks</h2>
+
+<p>SSL checks are available for HTTPS URLs. They report:</p>
+
+<ul>
+  <li>Whether the certificate is valid</li>
+  <li>Days remaining before expiry</li>
+  <li>Warning state when expiry is within the configured threshold</li>
+</ul>
+
+<p>Default warning threshold:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>30 days
+</code></pre></div></div>
+
+<p>SSL warning notifications are controlled per notification channel assignment.</p>
+
+<h2 id="heartbeat-monitors">Heartbeat Monitors</h2>
+
+<p>Heartbeat monitors are passive. Your service calls Observer Lite to prove that it is still alive.</p>
+
+<p>When you create a heartbeat monitor, Observer Lite generates a token. Use either endpoint:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>GET /api/heartbeat/{token}
+POST /api/heartbeat/{token}
+</code></pre></div></div>
+
+<p>Example cron job:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>curl <span class="nt">-fsS</span> https://observer.example.com/api/heartbeat/YOUR_TOKEN <span class="o">&gt;</span>/dev/null
+</code></pre></div></div>
+
+<p>Observer Lite marks the monitor down if no heartbeat arrives within:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>check_interval_seconds + heartbeat_grace_seconds
+</code></pre></div></div>
+
+<p>Heartbeat monitors are useful for:</p>
+
+<ul>
+  <li>Cron jobs</li>
+  <li>Backup scripts</li>
+  <li>Queue workers</li>
+  <li>Batch imports</li>
+  <li>Small internal services without HTTP health endpoints</li>
+</ul>
+
+<h2 id="groups">Groups</h2>
+
+<p>Groups organize monitor lists and dashboard filters. Deleting a group does not delete its monitors.</p>
+
+<p>Suggested groups:</p>
+
+<ul>
+  <li>Production</li>
+  <li>Internal</li>
+  <li>Customer-facing</li>
+  <li>Jobs</li>
+  <li>Infrastructure</li>
+</ul>
+
+<h2 id="manual-checks">Manual Checks</h2>
+
+<p>Use <strong>Check now</strong> from the monitor detail page to run a check immediately without waiting for the next scheduler interval.</p>
+:ET

@@ -1,0 +1,129 @@
+I"<h1 id="development">Development</h1>
+
+<p>Observer Lite has a FastAPI backend and a Vue 3 frontend.</p>
+
+<h2 id="repository-layout">Repository Layout</h2>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>observer-lite/
+├── backend/
+│   ├── app/
+│   │   ├── checkers/
+│   │   ├── db/
+│   │   ├── routers/
+│   │   ├── scheduler/
+│   │   ├── services/
+│   │   └── sse/
+│   └── tests/
+├── frontend/
+│   └── src/
+├── docs/
+├── Dockerfile
+└── docker-compose.yml
+</code></pre></div></div>
+
+<h2 id="backend-setup">Backend Setup</h2>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">cd </span>backend
+uv venv
+uv pip <span class="nb">install</span> <span class="nt">-e</span> <span class="s2">".[dev]"</span>
+alembic upgrade <span class="nb">head
+</span>uvicorn app.main:app <span class="nt">--reload</span> <span class="nt">--workers</span> 1
+</code></pre></div></div>
+
+<p>The backend runs on:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>http://localhost:8000
+</code></pre></div></div>
+
+<h2 id="frontend-setup">Frontend Setup</h2>
+
+<p>In another terminal:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">cd </span>frontend
+npm <span class="nb">install
+</span>npm run dev
+</code></pre></div></div>
+
+<p>The Vite dev server prints its local URL.</p>
+
+<h2 id="tests">Tests</h2>
+
+<p>Backend:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">cd </span>backend
+<span class="nv">DEBUG</span><span class="o">=</span><span class="nb">false </span>uv run pytest tests/ <span class="nt">--cov</span><span class="o">=</span>app <span class="nt">--cov-report</span><span class="o">=</span>term-missing <span class="nt">--cov-fail-under</span><span class="o">=</span>80
+</code></pre></div></div>
+
+<p>Frontend:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">cd </span>frontend
+npm run type-check
+npm run build
+</code></pre></div></div>
+
+<p>Lint:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">cd </span>backend
+uv run ruff check app tests
+</code></pre></div></div>
+
+<h2 id="documentation-site-locally">Documentation Site Locally</h2>
+
+<p>The docs are plain Jekyll-compatible Markdown plus a custom layout.</p>
+
+<p>The GitHub workflow builds them automatically, but you can preview with a local Jekyll install:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">cd </span>docs
+bundle init
+bundle add github-pages
+bundle <span class="nb">exec </span>jekyll serve <span class="nt">--baseurl</span> <span class="s2">""</span>
+</code></pre></div></div>
+
+<p>Open:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>http://localhost:4000
+</code></pre></div></div>
+
+<p>Do not commit generated <code class="language-plaintext highlighter-rouge">_site/</code> output.</p>
+
+<h2 id="adding-backend-endpoints">Adding Backend Endpoints</h2>
+
+<p>Preferred flow:</p>
+
+<ol>
+  <li>Add or update a schema in <code class="language-plaintext highlighter-rouge">backend/app/schemas</code>.</li>
+  <li>Add router behavior in <code class="language-plaintext highlighter-rouge">backend/app/routers</code>.</li>
+  <li>Put business logic in <code class="language-plaintext highlighter-rouge">backend/app/services</code> when it is shared or stateful.</li>
+  <li>Add tests in <code class="language-plaintext highlighter-rouge">backend/tests</code>.</li>
+  <li>Update docs when the behavior is user-visible.</li>
+</ol>
+
+<h2 id="adding-monitor-logic">Adding Monitor Logic</h2>
+
+<p>Checkers live in:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>backend/app/checkers/
+</code></pre></div></div>
+
+<p>Scheduler orchestration lives in:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>backend/app/scheduler/jobs.py
+</code></pre></div></div>
+
+<p>Result processing and incident state changes live in:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>backend/app/services/check_service.py
+</code></pre></div></div>
+
+<p>Keep checker functions focused on producing a <code class="language-plaintext highlighter-rouge">CheckResult</code>. Persisting results and opening incidents should stay in the service layer.</p>
+
+<h2 id="documentation-style">Documentation Style</h2>
+
+<ul>
+  <li>Write user-facing docs in English.</li>
+  <li>Prefer runnable examples over abstract descriptions.</li>
+  <li>Keep secrets as placeholders.</li>
+  <li>Mention whether an action is safe for production.</li>
+  <li>Update troubleshooting when adding a failure mode.</li>
+</ul>
+:ET

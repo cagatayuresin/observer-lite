@@ -1,0 +1,39 @@
+title: Observer Lite Docs
+description: Detailed installation, configuration, and operations guide for Observer Lite.
+url: "https://cagatayuresin.github.io"
+baseurl: "/observer-lite"
+repository: cagatayuresin/observer-lite
+github_username: cagatayuresin
+logo: /assets/logo.svg
+permalink: pretty
+
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: default
+
+nav:
+  - title: Overview
+    url: /
+  - title: Quick Start
+    url: /quick-start/
+  - title: Configuration
+    url: /configuration/
+  - title: Monitors
+    url: /monitors/
+  - title: Notifications
+    url: /notifications/
+  - title: Incidents & Maintenance
+    url: /incidents-maintenance/
+  - title: API
+    url: /api/
+  - title: Operations
+    url: /operations/
+  - title: Development
+    url: /development/
+  - title: Troubleshooting
+    url: /troubleshooting/
+
+exclude:
+  - README.md

@@ -1,0 +1,173 @@
+I"<h1 id="quick-start">Quick Start</h1>
+
+<p>This page gets Observer Lite running with Docker, then walks through the first login and first monitor.</p>
+
+<h2 id="requirements">Requirements</h2>
+
+<ul>
+  <li>Docker Engine 24+ or Docker Desktop</li>
+  <li>A host port for the web UI, usually <code class="language-plaintext highlighter-rouge">3000</code></li>
+  <li>A persistent volume for <code class="language-plaintext highlighter-rouge">/data</code></li>
+  <li>A long random <code class="language-plaintext highlighter-rouge">SECRET_KEY</code></li>
+</ul>
+
+<p>Generate a secret:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>openssl rand <span class="nt">-hex</span> 32
+</code></pre></div></div>
+
+<h2 id="run-with-docker">Run With Docker</h2>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker run <span class="nt">-d</span> <span class="se">\</span>
+  <span class="nt">--name</span> observer-lite <span class="se">\</span>
+  <span class="nt">--restart</span> unless-stopped <span class="se">\</span>
+  <span class="nt">-p</span> 3000:3000 <span class="se">\</span>
+  <span class="nt">-v</span> observer_data:/data <span class="se">\</span>
+  <span class="nt">-e</span> <span class="nv">SECRET_KEY</span><span class="o">=</span><span class="s2">"</span><span class="si">$(</span>openssl rand <span class="nt">-hex</span> 32<span class="si">)</span><span class="s2">"</span> <span class="se">\</span>
+  <span class="nt">-e</span> <span class="nv">DATABASE_PATH</span><span class="o">=</span><span class="s2">"/data/observer.db"</span> <span class="se">\</span>
+  <span class="nt">-e</span> <span class="nv">DATABASE_URL</span><span class="o">=</span><span class="s2">"sqlite+aiosqlite:////data/observer.db"</span> <span class="se">\</span>
+  ghcr.io/cagatayuresin/observer-lite:latest
+</code></pre></div></div>
+
+<p>Open <code class="language-plaintext highlighter-rouge">http://localhost:3000</code>.</p>
+
+<p>Default credentials:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Field</th>
+      <th>Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Username</td>
+      <td><code class="language-plaintext highlighter-rouge">admin</code></td>
+    </tr>
+    <tr>
+      <td>Password</td>
+      <td><code class="language-plaintext highlighter-rouge">admin</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<p>You will be asked to set a new password immediately.</p>
+
+<h2 id="run-with-docker-compose">Run With Docker Compose</h2>
+
+<p>Create <code class="language-plaintext highlighter-rouge">docker-compose.yml</code>:</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">services</span><span class="pi">:</span>
+  <span class="na">observer-lite</span><span class="pi">:</span>
+    <span class="na">image</span><span class="pi">:</span> <span class="s">ghcr.io/cagatayuresin/observer-lite:latest</span>
+    <span class="na">container_name</span><span class="pi">:</span> <span class="s">observer-lite</span>
+    <span class="na">restart</span><span class="pi">:</span> <span class="s">unless-stopped</span>
+    <span class="na">ports</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s2">"</span><span class="s">3000:3000"</span>
+    <span class="na">volumes</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s">observer_data:/data</span>
+    <span class="na">environment</span><span class="pi">:</span>
+      <span class="na">PORT</span><span class="pi">:</span> <span class="s2">"</span><span class="s">3000"</span>
+      <span class="na">SECRET_KEY</span><span class="pi">:</span> <span class="s2">"</span><span class="s">replace-with-a-long-random-secret"</span>
+      <span class="na">DATABASE_PATH</span><span class="pi">:</span> <span class="s2">"</span><span class="s">/data/observer.db"</span>
+      <span class="na">DATABASE_URL</span><span class="pi">:</span> <span class="s2">"</span><span class="s">sqlite+aiosqlite:////data/observer.db"</span>
+
+<span class="na">volumes</span><span class="pi">:</span>
+  <span class="na">observer_data</span><span class="pi">:</span>
+</code></pre></div></div>
+
+<p>Start it:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker compose up <span class="nt">-d</span>
+</code></pre></div></div>
+
+<p>View logs:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker compose logs <span class="nt">-f</span> observer-lite
+</code></pre></div></div>
+
+<h2 id="create-your-first-http-monitor">Create Your First HTTP Monitor</h2>
+
+<ol>
+  <li>Log in to the dashboard.</li>
+  <li>Open <strong>Monitors</strong>.</li>
+  <li>Choose <strong>Create Monitor</strong>.</li>
+  <li>Use these values:</li>
+</ol>
+
+<table>
+  <thead>
+    <tr>
+      <th>Field</th>
+      <th>Example</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Name</td>
+      <td><code class="language-plaintext highlighter-rouge">Website homepage</code></td>
+    </tr>
+    <tr>
+      <td>Type</td>
+      <td><code class="language-plaintext highlighter-rouge">HTTP GET</code></td>
+    </tr>
+    <tr>
+      <td>URL</td>
+      <td><code class="language-plaintext highlighter-rouge">https://example.com</code></td>
+    </tr>
+    <tr>
+      <td>Interval</td>
+      <td><code class="language-plaintext highlighter-rouge">60</code> seconds</td>
+    </tr>
+    <tr>
+      <td>Timeout</td>
+      <td><code class="language-plaintext highlighter-rouge">10</code> seconds</td>
+    </tr>
+    <tr>
+      <td>Expected status</td>
+      <td><code class="language-plaintext highlighter-rouge">2xx</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Save the monitor. The scheduler will start checking it automatically.</p>
+
+<h2 id="create-a-notification-channel">Create a Notification Channel</h2>
+
+<ol>
+  <li>Open <strong>Notifications</strong>.</li>
+  <li>Add an email or Telegram channel.</li>
+  <li>Use the <strong>Test</strong> action before assigning it to production monitors.</li>
+  <li>Assign the channel to a monitor and choose which events should notify:
+    <ul>
+      <li>Down</li>
+      <li>Recovery</li>
+      <li>SSL warning</li>
+    </ul>
+  </li>
+</ol>
+
+<h2 id="verify-the-container">Verify the Container</h2>
+
+<p>Check that the app responds:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>curl <span class="nt">-fsS</span> http://localhost:3000/api/docs <span class="o">&gt;</span>/dev/null
+</code></pre></div></div>
+
+<p>Check the image version label:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker image inspect ghcr.io/cagatayuresin/observer-lite:latest <span class="se">\</span>
+  <span class="nt">--format</span> <span class="s1">''</span>
+</code></pre></div></div>
+
+<h2 id="stop-and-remove">Stop and Remove</h2>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker <span class="nb">rm</span> <span class="nt">-f</span> observer-lite
+</code></pre></div></div>
+
+<p>Remove the data volume only when you intentionally want to delete all persisted data:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker volume <span class="nb">rm </span>observer_data
+</code></pre></div></div>
+:ET

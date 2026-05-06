@@ -1,0 +1,174 @@
+I"Â<h1 id="configuration">Configuration</h1>
+
+<p>Observer Lite is configured through environment variables. Most application settings can also be managed in the dashboard after the first login.</p>
+
+<h2 id="environment-variables">Environment Variables</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Variable</th>
+      <th>Required</th>
+      <th>Default</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">PORT</code></td>
+      <td>No</td>
+      <td><code class="language-plaintext highlighter-rouge">3000</code></td>
+      <td>HTTP port used by Uvicorn inside the container.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">SECRET_KEY</code></td>
+      <td>Yes</td>
+      <td>none in Docker</td>
+      <td>Signing and encryption root secret. Use a long random value.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">DATABASE_PATH</code></td>
+      <td>No</td>
+      <td><code class="language-plaintext highlighter-rouge">/data/observer.db</code></td>
+      <td>SQLite database path.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">DATABASE_URL</code></td>
+      <td>No</td>
+      <td><code class="language-plaintext highlighter-rouge">sqlite+aiosqlite:////data/observer.db</code></td>
+      <td>Async SQLAlchemy database URL.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">DEBUG</code></td>
+      <td>No</td>
+      <td><code class="language-plaintext highlighter-rouge">false</code></td>
+      <td>Enables extra debug behavior when set to a boolean true value.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="required-secret">Required Secret</h2>
+
+<p><code class="language-plaintext highlighter-rouge">SECRET_KEY</code> is required in the Docker image. It protects JWT signing and credential encryption.</p>
+
+<p>Use this pattern:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">SECRET_KEY</span><span class="o">=</span><span class="s2">"</span><span class="si">$(</span>openssl rand <span class="nt">-hex</span> 32<span class="si">)</span><span class="s2">"</span>
+</code></pre></div></div>
+
+<p>Do not rotate <code class="language-plaintext highlighter-rouge">SECRET_KEY</code> casually on an existing installation. Changing it can invalidate tokens and make previously encrypted notification credentials unreadable.</p>
+
+<h2 id="data-storage">Data Storage</h2>
+
+<p>The production image uses SQLite by default:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>/data/observer.db
+</code></pre></div></div>
+
+<p>Mount <code class="language-plaintext highlighter-rouge">/data</code> to persistent storage:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker run <span class="nt">-v</span> observer_data:/data ...
+</code></pre></div></div>
+
+<p>Back up the database file while the app is stopped, or use a SQLite-safe backup process.</p>
+
+<h2 id="application-settings">Application Settings</h2>
+
+<p>The dashboard stores application settings in the <code class="language-plaintext highlighter-rouge">app_settings</code> table.</p>
+
+<p>Common settings:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Setting</th>
+      <th>Purpose</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">data_retention_days</code></td>
+      <td>Number of days to keep check result history.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">app_base_url</code></td>
+      <td>Public URL used in generated links and notifications.</td>
+    </tr>
+    <tr>
+      <td>SMTP settings</td>
+      <td>Saved by the notification/settings UI for email delivery.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Sensitive settings are masked when fetched by the API.</p>
+
+<h2 id="networking">Networking</h2>
+
+<p>Expose the container port you want users to reach:</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">ports</span><span class="pi">:</span>
+  <span class="pi">-</span> <span class="s2">"</span><span class="s">3000:3000"</span>
+</code></pre></div></div>
+
+<p>If Observer Lite runs behind a reverse proxy, terminate HTTPS at the proxy and forward traffic to the container.</p>
+
+<p>Example Nginx location:</p>
+
+<div class="language-nginx highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">location</span> <span class="n">/</span> <span class="p">{</span>
+  <span class="kn">proxy_pass</span> <span class="s">http://127.0.0.1:3000</span><span class="p">;</span>
+  <span class="kn">proxy_http_version</span> <span class="mi">1</span><span class="s">.1</span><span class="p">;</span>
+  <span class="kn">proxy_set_header</span> <span class="s">Host</span> <span class="nv">$host</span><span class="p">;</span>
+  <span class="kn">proxy_set_header</span> <span class="s">X-Forwarded-For</span> <span class="nv">$proxy_add_x_forwarded_for</span><span class="p">;</span>
+  <span class="kn">proxy_set_header</span> <span class="s">X-Forwarded-Proto</span> <span class="nv">$scheme</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h2 id="worker-count">Worker Count</h2>
+
+<p>Run Observer Lite with one worker only.</p>
+
+<p>The scheduler and SSE broadcaster are process-local. Multiple workers can duplicate checks, split dashboard events, and create confusing incident behavior.</p>
+
+<p>The bundled entrypoint already starts Uvicorn with:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">--workers</span> 1
+</code></pre></div></div>
+
+<h2 id="github-container-registry-tags">GitHub Container Registry Tags</h2>
+
+<p>Published images use tags derived from the root <code class="language-plaintext highlighter-rouge">VERSION</code> file:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Tag</th>
+      <th>Meaning</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">latest</code></td>
+      <td>Latest build from the default branch.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">0.1.0</code></td>
+      <td>Exact version from <code class="language-plaintext highlighter-rouge">VERSION</code>.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">v0.1.0</code></td>
+      <td>Git-style version tag.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">0.1</code></td>
+      <td>Major/minor convenience tag.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>When creating a release tag, make it match <code class="language-plaintext highlighter-rouge">VERSION</code>:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>git tag v0.1.0
+git push origin v0.1.0
+</code></pre></div></div>
+:ET

@@ -32,6 +32,12 @@
 
 Think of it as a lighter, more flexible alternative to Uptime Kuma — with a built-in status code DSL, response body matching, API keys, audit logging, and configurable data retention.
 
+Full documentation is available in [`docs/`](docs/) and can be published with GitHub Pages at:
+
+```text
+https://cagatayuresin.github.io/observer-lite/
+```
+
 ---
 
 ## Features

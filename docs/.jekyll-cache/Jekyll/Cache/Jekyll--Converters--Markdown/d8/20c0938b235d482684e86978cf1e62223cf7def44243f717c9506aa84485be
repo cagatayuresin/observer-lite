@@ -1,0 +1,206 @@
+I"C<h1 id="notifications">Notifications</h1>
+
+<p>Notification channels deliver down, recovery, and SSL expiry alerts. Channels are created once and assigned to monitors as needed.</p>
+
+<h2 id="event-types">Event Types</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Event</th>
+      <th>When it is sent</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Down</td>
+      <td>A monitor reaches its retry threshold and an incident opens.</td>
+    </tr>
+    <tr>
+      <td>Recovery</td>
+      <td>A monitor returns to a healthy state after an incident.</td>
+    </tr>
+    <tr>
+      <td>SSL warning</td>
+      <td>A certificate is valid but near its configured expiry threshold.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Each monitor-channel assignment can choose which event types are enabled.</p>
+
+<h2 id="email-channels">Email Channels</h2>
+
+<p>Email channels use SMTP.</p>
+
+<p>Required values:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Field</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>SMTP host</td>
+      <td>Mail server hostname.</td>
+    </tr>
+    <tr>
+      <td>SMTP port</td>
+      <td>Usually <code class="language-plaintext highlighter-rouge">587</code>, <code class="language-plaintext highlighter-rouge">465</code>, or <code class="language-plaintext highlighter-rouge">25</code>.</td>
+    </tr>
+    <tr>
+      <td>SMTP user</td>
+      <td>Username for authentication, if required.</td>
+    </tr>
+    <tr>
+      <td>SMTP password</td>
+      <td>Stored encrypted by Observer Lite.</td>
+    </tr>
+    <tr>
+      <td>From address</td>
+      <td>Sender address shown in alerts.</td>
+    </tr>
+    <tr>
+      <td>Recipients</td>
+      <td>One or more destination email addresses.</td>
+    </tr>
+    <tr>
+      <td>TLS settings</td>
+      <td>Choose the mode required by your provider.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Common ports:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Port</th>
+      <th>Typical use</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">587</code></td>
+      <td>STARTTLS submission.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">465</code></td>
+      <td>TLS from connection start.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">25</code></td>
+      <td>Plain SMTP or relay inside a private network.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>After saving the channel, use the <strong>Test</strong> action before assigning it to production monitors.</p>
+
+<h2 id="telegram-channels">Telegram Channels</h2>
+
+<p>Telegram channels require a bot token and chat ID.</p>
+
+<p>Setup flow:</p>
+
+<ol>
+  <li>Open Telegram and talk to <code class="language-plaintext highlighter-rouge">@BotFather</code>.</li>
+  <li>Create a bot and copy the bot token.</li>
+  <li>Add the bot to the destination chat or group.</li>
+  <li>Send at least one message in the chat.</li>
+  <li>Get the chat ID using the Telegram Bot API or your preferred helper tool.</li>
+  <li>Save the channel in Observer Lite.</li>
+  <li>Use the <strong>Test</strong> action.</li>
+</ol>
+
+<p>Required values:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Field</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Bot token</td>
+      <td>Token from <code class="language-plaintext highlighter-rouge">@BotFather</code>.</td>
+    </tr>
+    <tr>
+      <td>Chat ID</td>
+      <td>Numeric or string chat identifier.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="assign-channels-to-monitors">Assign Channels to Monitors</h2>
+
+<p>Create the channel first, then assign it from the monitor UI.</p>
+
+<p>For each assignment, choose:</p>
+
+<ul>
+  <li>Notify on down</li>
+  <li>Notify on recovery</li>
+  <li>Notify on SSL warning</li>
+</ul>
+
+<p>This lets you route noisy events differently. For example, a team channel can receive down and recovery alerts while a security mailbox receives only SSL warnings.</p>
+
+<h2 id="alert-lifecycle">Alert Lifecycle</h2>
+
+<p>Observer Lite avoids sending a down notification for every failed check.</p>
+
+<p>The simplified flow is:</p>
+
+<ol>
+  <li>A check fails.</li>
+  <li><code class="language-plaintext highlighter-rouge">consecutive_failures</code> increases.</li>
+  <li>Once failures reach <code class="language-plaintext highlighter-rouge">retry_count</code>, an incident opens.</li>
+  <li>A down notification is sent once for that incident.</li>
+  <li>When the monitor recovers, the incident closes.</li>
+  <li>A recovery notification is sent once.</li>
+</ol>
+
+<h2 id="message-content">Message Content</h2>
+
+<p>Down alerts include:</p>
+
+<ul>
+  <li>Monitor name</li>
+  <li>URL</li>
+  <li>Failure time</li>
+  <li>Root cause or error message</li>
+</ul>
+
+<p>Recovery alerts include:</p>
+
+<ul>
+  <li>Monitor name</li>
+  <li>URL</li>
+  <li>Recovery time</li>
+  <li>Downtime duration</li>
+</ul>
+
+<p>SSL warning alerts include:</p>
+
+<ul>
+  <li>Monitor name</li>
+  <li>URL</li>
+  <li>Days remaining before certificate expiry</li>
+</ul>
+
+<h2 id="delivery-failures">Delivery Failures</h2>
+
+<p>If one channel fails, Observer Lite logs the error and continues processing the check result. A failed notification does not roll back incident state.</p>
+
+<p>Check container logs when a test notification fails:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker logs observer-lite
+</code></pre></div></div>
+:ET

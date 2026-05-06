@@ -1,0 +1,90 @@
+I"C<section class="hero">
+  <h1>Observer Lite Documentation</h1>
+  <p>Observer Lite is a lightweight, self-hosted uptime monitor with HTTP, ping, SSL, and heartbeat checks, alert routing, incident tracking, maintenance windows, API keys, and a bundled Vue dashboard.</p>
+</section>
+
+<div class="callout-grid">
+  <div class="callout">
+    <strong>Single image</strong>
+    Run the backend, dashboard, scheduler, migrations, and static assets from one Docker image.
+  </div>
+  <div class="callout">
+    <strong>SQLite first</strong>
+    Store runtime data in a mounted `/data` volume without operating an external database.
+  </div>
+  <div class="callout">
+    <strong>Alert aware</strong>
+    Send down, recovery, and SSL expiry notifications by email or Telegram.
+  </div>
+</div>
+
+<h2 id="what-you-can-monitor">What You Can Monitor</h2>
+
+<p>Observer Lite supports active and passive checks:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Monitor type</th>
+      <th>Use it for</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>HTTP GET / POST / HEAD</td>
+      <td>Websites, APIs, webhooks, and status endpoints</td>
+    </tr>
+    <tr>
+      <td>Ping</td>
+      <td>Hosts where ICMP reachability is a useful signal</td>
+    </tr>
+    <tr>
+      <td>SSL certificate</td>
+      <td>Certificate validity and expiry warnings for HTTPS targets</td>
+    </tr>
+    <tr>
+      <td>Heartbeat</td>
+      <td>Jobs and services that should call Observer Lite on a schedule</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="main-concepts">Main Concepts</h2>
+
+<p><strong>Monitor</strong><br />
+A target to check. Each monitor stores its URL, type, interval, timeout, retry settings, status matching rules, alert behavior, and current live state.</p>
+
+<p><strong>Check result</strong><br />
+A single probe result. It records status, response time, HTTP status code, SSL state, and error details.</p>
+
+<p><strong>Incident</strong><br />
+An outage lifecycle created after a monitor exceeds its retry threshold. Incidents can be acknowledged and are closed automatically when the monitor recovers.</p>
+
+<p><strong>Notification channel</strong><br />
+An email or Telegram destination that can be assigned to one or more monitors.</p>
+
+<p><strong>Maintenance window</strong><br />
+A planned downtime period that suppresses alert noise for selected monitors.</p>
+
+<h2 id="recommended-reading-path">Recommended Reading Path</h2>
+
+<ol>
+  <li>Start with <a href="quick-start/">Quick Start</a> to run the app locally.</li>
+  <li>Review <a href="configuration/">Configuration</a> before deploying a production instance.</li>
+  <li>Use <a href="monitors/">Monitors</a> to model HTTP, ping, SSL, and heartbeat checks.</li>
+  <li>Configure <a href="notifications/">Notifications</a> so outages reach the right people.</li>
+  <li>Keep <a href="operations/">Operations</a> and <a href="troubleshooting/">Troubleshooting</a> handy after deployment.</li>
+</ol>
+
+<h2 id="production-checklist">Production Checklist</h2>
+
+<ul>
+  <li>Set a long random <code class="language-plaintext highlighter-rouge">SECRET_KEY</code>.</li>
+  <li>Mount <code class="language-plaintext highlighter-rouge">/data</code> to persistent storage.</li>
+  <li>Keep <code class="language-plaintext highlighter-rouge">--workers 1</code>; the scheduler and SSE broadcaster are process-local.</li>
+  <li>Put the app behind HTTPS when exposed to the internet.</li>
+  <li>Change the default <code class="language-plaintext highlighter-rouge">admin</code> password on first login.</li>
+  <li>Back up the SQLite database file regularly.</li>
+  <li>Configure at least one notification channel and test it from the UI.</li>
+</ul>
+:ET

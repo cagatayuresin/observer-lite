@@ -1,0 +1,161 @@
+I"$<h1 id="incidents-and-maintenance">Incidents and Maintenance</h1>
+
+<p>Observer Lite tracks outages as incidents and supports maintenance windows to suppress expected alert noise.</p>
+
+<h2 id="incident-lifecycle">Incident Lifecycle</h2>
+
+<p>An incident starts when a monitor has enough consecutive failures to reach its retry threshold.</p>
+
+<p>Example:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Setting</th>
+      <th>Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Check interval</td>
+      <td><code class="language-plaintext highlighter-rouge">60</code> seconds</td>
+    </tr>
+    <tr>
+      <td>Retry count</td>
+      <td><code class="language-plaintext highlighter-rouge">3</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<p>If the monitor fails three checks in a row, Observer Lite opens an incident and sends a down notification.</p>
+
+<p>The incident closes when a later check succeeds.</p>
+
+<h2 id="incident-fields">Incident Fields</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Field</th>
+      <th>Meaning</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Monitor</td>
+      <td>Monitor that failed.</td>
+    </tr>
+    <tr>
+      <td>Started at</td>
+      <td>Time the incident opened.</td>
+    </tr>
+    <tr>
+      <td>Resolved at</td>
+      <td>Time the monitor recovered.</td>
+    </tr>
+    <tr>
+      <td>Duration</td>
+      <td>Downtime length in seconds.</td>
+    </tr>
+    <tr>
+      <td>Root cause</td>
+      <td>Error message captured from the failed check.</td>
+    </tr>
+    <tr>
+      <td>Acknowledged by</td>
+      <td>User who acknowledged the incident, when applicable.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="acknowledgement">Acknowledgement</h2>
+
+<p>Acknowledgement records that a human has seen the incident. It does not close the incident.</p>
+
+<p>Use acknowledgement for:</p>
+
+<ul>
+  <li>Handoffs between responders</li>
+  <li>Reducing duplicate investigation</li>
+  <li>Recording that the outage is known</li>
+</ul>
+
+<h2 id="maintenance-windows">Maintenance Windows</h2>
+
+<p>Maintenance windows describe planned downtime.</p>
+
+<p>Fields:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Field</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Name</td>
+      <td>Human-readable reason, such as <code class="language-plaintext highlighter-rouge">Database upgrade</code>.</td>
+    </tr>
+    <tr>
+      <td>Starts at</td>
+      <td>Beginning of the maintenance period.</td>
+    </tr>
+    <tr>
+      <td>Ends at</td>
+      <td>End of the maintenance period.</td>
+    </tr>
+    <tr>
+      <td>Repeat cron</td>
+      <td>Optional cron expression for repeating windows.</td>
+    </tr>
+    <tr>
+      <td>Suppress alerts</td>
+      <td>Whether matching checks should suppress notifications.</td>
+    </tr>
+    <tr>
+      <td>Monitor IDs</td>
+      <td>Monitors affected by the window.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="creating-a-window">Creating a Window</h2>
+
+<ol>
+  <li>Open <strong>Maintenance</strong>.</li>
+  <li>Create a new window.</li>
+  <li>Choose start and end times.</li>
+  <li>Select affected monitors.</li>
+  <li>Enable alert suppression if the downtime is expected.</li>
+</ol>
+
+<h2 id="how-checks-behave-during-maintenance">How Checks Behave During Maintenance</h2>
+
+<p>When a monitor is inside an active maintenance window with suppression enabled, scheduled checks are skipped for alerting purposes. This prevents planned downtime from opening noisy incidents.</p>
+
+<h2 id="suggested-practices">Suggested Practices</h2>
+
+<ul>
+  <li>Give maintenance windows descriptive names.</li>
+  <li>Keep windows as short as practical.</li>
+  <li>Use monitor groups to make selection easier.</li>
+  <li>Create windows before deploying risky infrastructure changes.</li>
+  <li>Review old windows periodically.</li>
+</ul>
+
+<h2 id="what-maintenance-does-not-do">What Maintenance Does Not Do</h2>
+
+<p>Maintenance windows do not pause the whole application.</p>
+
+<p>They do not:</p>
+
+<ul>
+  <li>Stop the web UI</li>
+  <li>Disable user login</li>
+  <li>Delete check history</li>
+  <li>Change monitor configuration</li>
+  <li>Silence unrelated monitors</li>
+</ul>
+:ET

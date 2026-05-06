@@ -1,0 +1,215 @@
+I"È<h1 id="troubleshooting">Troubleshooting</h1>
+
+<p>Use this page when Observer Lite does not start, checks do not run, or alerts do not arrive.</p>
+
+<h2 id="container-exits-immediately">Container Exits Immediately</h2>
+
+<p>Check logs:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker logs observer-lite
+</code></pre></div></div>
+
+<p>Common causes:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Symptom</th>
+      <th>Fix</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">SECRET_KEY is required</code></td>
+      <td>Set <code class="language-plaintext highlighter-rouge">SECRET_KEY</code> to a long random value.</td>
+    </tr>
+    <tr>
+      <td>SQLite permission error</td>
+      <td>Verify the <code class="language-plaintext highlighter-rouge">/data</code> mount is writable by the container.</td>
+    </tr>
+    <tr>
+      <td>Migration failure</td>
+      <td>Check whether the database file is corrupt or from an unsupported future version.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="cannot-log-in">Cannot Log In</h2>
+
+<p>Default first login:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Field</th>
+      <th>Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Username</td>
+      <td><code class="language-plaintext highlighter-rouge">admin</code></td>
+    </tr>
+    <tr>
+      <td>Password</td>
+      <td><code class="language-plaintext highlighter-rouge">admin</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<p>If this is not a fresh database, the password may already have been changed.</p>
+
+<p>If the account exists but cannot log in:</p>
+
+<ol>
+  <li>Check that the container is using the expected <code class="language-plaintext highlighter-rouge">/data</code> volume.</li>
+  <li>Confirm the browser is reaching the correct host.</li>
+  <li>Review container logs for authentication errors.</li>
+</ol>
+
+<h2 id="checks-are-not-running">Checks Are Not Running</h2>
+
+<p>Check logs for scheduler startup:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Scheduler started
+Scheduled N monitor jobs
+</code></pre></div></div>
+
+<p>If monitors are not scheduled:</p>
+
+<ul>
+  <li>Confirm each monitor is enabled.</li>
+  <li>Confirm the app is running with one worker.</li>
+  <li>Check whether the monitor is inside a maintenance window.</li>
+  <li>Use <strong>Check now</strong> from the monitor page.</li>
+</ul>
+
+<h2 id="http-monitor-is-down-unexpectedly">HTTP Monitor Is Down Unexpectedly</h2>
+
+<p>Review:</p>
+
+<ul>
+  <li>URL is reachable from inside the container.</li>
+  <li>Expected status expression matches the real response.</li>
+  <li>Custom headers are valid JSON.</li>
+  <li>Body match mode and value match the response.</li>
+  <li>Timeout is long enough for the target.</li>
+</ul>
+
+<p>Test from inside a container network when possible:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>curl <span class="nt">-i</span> https://example.com/health
+</code></pre></div></div>
+
+<h2 id="ping-monitor-fails">Ping Monitor Fails</h2>
+
+<p>Ping depends on ICMP reachability.</p>
+
+<p>Some hosts and networks block ICMP even when HTTP is healthy. If that is expected, use an HTTP monitor instead.</p>
+
+<p>Also verify that the Docker image includes <code class="language-plaintext highlighter-rouge">iputils-ping</code>; the official image does.</p>
+
+<h2 id="ssl-warning-does-not-send">SSL Warning Does Not Send</h2>
+
+<p>Check:</p>
+
+<ul>
+  <li>URL starts with <code class="language-plaintext highlighter-rouge">https://</code>.</li>
+  <li>SSL checking is enabled on the monitor.</li>
+  <li>Expiry days are below the configured warning threshold.</li>
+  <li>The assigned notification channel has SSL warning enabled.</li>
+  <li>The channel itself is enabled.</li>
+</ul>
+
+<h2 id="email-test-fails">Email Test Fails</h2>
+
+<p>Common causes:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Cause</th>
+      <th>Fix</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Wrong SMTP port</td>
+      <td>Try <code class="language-plaintext highlighter-rouge">587</code> for STARTTLS or <code class="language-plaintext highlighter-rouge">465</code> for TLS.</td>
+    </tr>
+    <tr>
+      <td>Provider blocks password auth</td>
+      <td>Create an app password or SMTP token.</td>
+    </tr>
+    <tr>
+      <td>From address rejected</td>
+      <td>Use a sender address allowed by the provider.</td>
+    </tr>
+    <tr>
+      <td>Network blocked</td>
+      <td>Verify the host can reach the SMTP server.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Check logs:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker logs observer-lite
+</code></pre></div></div>
+
+<h2 id="telegram-test-fails">Telegram Test Fails</h2>
+
+<p>Check:</p>
+
+<ul>
+  <li>Bot token is correct.</li>
+  <li>Bot was added to the chat or group.</li>
+  <li>The chat ID is correct.</li>
+  <li>The chat has received at least one message after the bot was added.</li>
+</ul>
+
+<h2 id="dashboard-does-not-update-live">Dashboard Does Not Update Live</h2>
+
+<p>The dashboard uses Server-Sent Events.</p>
+
+<p>If live updates do not work:</p>
+
+<ul>
+  <li>Confirm the browser can reach <code class="language-plaintext highlighter-rouge">/api/sse/dashboard</code>.</li>
+  <li>Check reverse proxy buffering settings.</li>
+  <li>Keep the app at one Uvicorn worker.</li>
+</ul>
+
+<p>Nginx may need buffering disabled for SSE:</p>
+
+<div class="language-nginx highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">proxy_buffering</span> <span class="no">off</span><span class="p">;</span>
+<span class="k">proxy_cache</span> <span class="no">off</span><span class="p">;</span>
+</code></pre></div></div>
+
+<h2 id="github-pages-site-does-not-publish">GitHub Pages Site Does Not Publish</h2>
+
+<p>Check:</p>
+
+<ol>
+  <li>Repository <strong>Settings</strong> -&gt; <strong>Pages</strong> uses <strong>GitHub Actions</strong>.</li>
+  <li>The <strong>Pages</strong> workflow has permission to deploy.</li>
+  <li>The workflow completed successfully.</li>
+  <li>The public URL uses the project path:</li>
+</ol>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>https://cagatayuresin.github.io/observer-lite/
+</code></pre></div></div>
+
+<h2 id="ghcr-image-is-not-public">GHCR Image Is Not Public</h2>
+
+<p>After the first package is created:</p>
+
+<ol>
+  <li>Open the repository on GitHub.</li>
+  <li>Open <strong>Packages</strong>.</li>
+  <li>Choose <code class="language-plaintext highlighter-rouge">observer-lite</code>.</li>
+  <li>Update package visibility to public if needed.</li>
+</ol>
+
+<p>The workflow can push the image, but package visibility is controlled in GitHub package settings.</p>
+:ET

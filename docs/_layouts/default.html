@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="{{ site.description }}">
+    <title>{% if page.title %}{{ page.title }} | {% endif %}{{ site.title }}</title>
+    <link rel="icon" href="{{ '/assets/logo.svg' | relative_url }}" type="image/svg+xml">
+    <link rel="stylesheet" href="{{ '/assets/css/style.css' | relative_url }}">
+  </head>
+  <body>
+    <a class="skip-link" href="#content">Skip to content</a>
+    <div class="site-shell">
+      <aside class="sidebar" aria-label="Documentation navigation">
+        <a class="brand" href="{{ '/' | relative_url }}">
+          <img src="{{ '/assets/logo.svg' | relative_url }}" width="44" height="44" alt="">
+          <span>
+            <strong>Observer Lite</strong>
+            <small>Documentation</small>
+          </span>
+        </a>
+
+        <nav class="nav-list">
+          {% for item in site.nav %}
+            <a href="{{ item.url | relative_url }}" {% if page.url == item.url %}aria-current="page"{% endif %}>
+              {{ item.title }}
+            </a>
+          {% endfor %}
+        </nav>
+
+        <div class="sidebar-footer">
+          <a href="https://github.com/{{ site.repository }}">GitHub repository</a>
+          <a href="https://github.com/{{ site.repository }}/pkgs/container/observer-lite">GHCR image</a>
+        </div>
+      </aside>
+
+      <main id="content" class="content">
+        <article class="doc">
+          {{ content }}
+        </article>
+      </main>
+    </div>
+  </body>
+</html>

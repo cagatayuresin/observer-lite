@@ -1,0 +1,193 @@
+I"e"<h1 id="api">API</h1>
+
+<p>Observer Lite exposes a REST API under <code class="language-plaintext highlighter-rouge">/api</code>. The running application also provides interactive Swagger documentation at <code class="language-plaintext highlighter-rouge">/api/docs</code>.</p>
+
+<h2 id="authentication">Authentication</h2>
+
+<p>The API accepts:</p>
+
+<ul>
+  <li>JWT access tokens returned by <code class="language-plaintext highlighter-rouge">/api/auth/login</code></li>
+  <li><code class="language-plaintext highlighter-rouge">obs_</code> prefixed API keys created in the UI or API</li>
+</ul>
+
+<p>Use credentials as a Bearer token:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>curl <span class="nt">-H</span> <span class="s2">"Authorization: Bearer YOUR_TOKEN"</span> <span class="se">\</span>
+  https://observer.example.com/api/auth/me
+</code></pre></div></div>
+
+<h2 id="login">Login</h2>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>curl <span class="nt">-sS</span> <span class="nt">-X</span> POST https://observer.example.com/api/auth/login <span class="se">\</span>
+  <span class="nt">-H</span> <span class="s2">"Content-Type: application/json"</span> <span class="se">\</span>
+  <span class="nt">-d</span> <span class="s1">'{"username":"admin","password":"admin"}'</span>
+</code></pre></div></div>
+
+<p>The response includes an access token and refresh token.</p>
+
+<h2 id="api-keys">API Keys</h2>
+
+<p>Create a key:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>curl <span class="nt">-sS</span> <span class="nt">-X</span> POST https://observer.example.com/api/api-keys <span class="se">\</span>
+  <span class="nt">-H</span> <span class="s2">"Authorization: Bearer ACCESS_TOKEN"</span> <span class="se">\</span>
+  <span class="nt">-H</span> <span class="s2">"Content-Type: application/json"</span> <span class="se">\</span>
+  <span class="nt">-d</span> <span class="s1">'{"name":"automation"}'</span>
+</code></pre></div></div>
+
+<p>The raw key is returned once. Store it immediately.</p>
+
+<p>Use it:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>curl <span class="nt">-H</span> <span class="s2">"Authorization: Bearer obs_YOUR_KEY"</span> <span class="se">\</span>
+  https://observer.example.com/api/monitors
+</code></pre></div></div>
+
+<h2 id="endpoint-groups">Endpoint Groups</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Area</th>
+      <th>Endpoints</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Auth</td>
+      <td><code class="language-plaintext highlighter-rouge">/api/auth/login</code>, <code class="language-plaintext highlighter-rouge">/api/auth/refresh</code>, <code class="language-plaintext highlighter-rouge">/api/auth/logout</code>, <code class="language-plaintext highlighter-rouge">/api/auth/me</code>, <code class="language-plaintext highlighter-rouge">/api/auth/change-password</code></td>
+    </tr>
+    <tr>
+      <td>Users</td>
+      <td><code class="language-plaintext highlighter-rouge">/api/users</code></td>
+    </tr>
+    <tr>
+      <td>Monitors</td>
+      <td><code class="language-plaintext highlighter-rouge">/api/monitors</code>, <code class="language-plaintext highlighter-rouge">/api/monitors/{id}</code></td>
+    </tr>
+    <tr>
+      <td>Monitor actions</td>
+      <td><code class="language-plaintext highlighter-rouge">/api/monitors/{id}/pause</code>, <code class="language-plaintext highlighter-rouge">/api/monitors/{id}/resume</code>, <code class="language-plaintext highlighter-rouge">/api/monitors/{id}/check-now</code></td>
+    </tr>
+    <tr>
+      <td>Results</td>
+      <td><code class="language-plaintext highlighter-rouge">/api/check-results</code></td>
+    </tr>
+    <tr>
+      <td>Incidents</td>
+      <td><code class="language-plaintext highlighter-rouge">/api/incidents</code>, <code class="language-plaintext highlighter-rouge">/api/incidents/{id}/acknowledge</code></td>
+    </tr>
+    <tr>
+      <td>Notifications</td>
+      <td><code class="language-plaintext highlighter-rouge">/api/channels</code>, <code class="language-plaintext highlighter-rouge">/api/channels/{id}/test</code></td>
+    </tr>
+    <tr>
+      <td>Maintenance</td>
+      <td><code class="language-plaintext highlighter-rouge">/api/maintenance</code></td>
+    </tr>
+    <tr>
+      <td>Settings</td>
+      <td><code class="language-plaintext highlighter-rouge">/api/settings</code></td>
+    </tr>
+    <tr>
+      <td>API keys</td>
+      <td><code class="language-plaintext highlighter-rouge">/api/api-keys</code></td>
+    </tr>
+    <tr>
+      <td>Audit log</td>
+      <td><code class="language-plaintext highlighter-rouge">/api/audit-log</code></td>
+    </tr>
+    <tr>
+      <td>Import/export</td>
+      <td><code class="language-plaintext highlighter-rouge">/api/export/monitors</code>, <code class="language-plaintext highlighter-rouge">/api/import/monitors</code></td>
+    </tr>
+    <tr>
+      <td>Realtime</td>
+      <td><code class="language-plaintext highlighter-rouge">/api/sse/dashboard</code></td>
+    </tr>
+    <tr>
+      <td>Heartbeat</td>
+      <td><code class="language-plaintext highlighter-rouge">/api/heartbeat/{token}</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="create-a-monitor">Create a Monitor</h2>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>curl <span class="nt">-sS</span> <span class="nt">-X</span> POST https://observer.example.com/api/monitors <span class="se">\</span>
+  <span class="nt">-H</span> <span class="s2">"Authorization: Bearer ACCESS_TOKEN"</span> <span class="se">\</span>
+  <span class="nt">-H</span> <span class="s2">"Content-Type: application/json"</span> <span class="se">\</span>
+  <span class="nt">-d</span> <span class="s1">'{
+    "name": "Homepage",
+    "url": "https://example.com",
+    "monitor_type": "http_get",
+    "check_interval_seconds": 60,
+    "timeout_seconds": 10,
+    "retry_count": 3,
+    "expected_status_codes": "2xx"
+  }'</span>
+</code></pre></div></div>
+
+<h2 id="list-check-results">List Check Results</h2>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>curl <span class="nt">-H</span> <span class="s2">"Authorization: Bearer ACCESS_TOKEN"</span> <span class="se">\</span>
+  <span class="s2">"https://observer.example.com/api/check-results?monitor_id=1&amp;limit=50"</span>
+</code></pre></div></div>
+
+<p>Optional query parameters:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Parameter</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">monitor_id</code></td>
+      <td>Limit results to a monitor.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">from</code></td>
+      <td>ISO datetime lower bound.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">to</code></td>
+      <td>ISO datetime upper bound.</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">limit</code></td>
+      <td>Maximum results, up to <code class="language-plaintext highlighter-rouge">1000</code>.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="export-monitors">Export Monitors</h2>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>curl <span class="nt">-H</span> <span class="s2">"Authorization: Bearer ACCESS_TOKEN"</span> <span class="se">\</span>
+  https://observer.example.com/api/export/monitors
+</code></pre></div></div>
+
+<p>The export includes portable monitor configuration, not runtime state.</p>
+
+<h2 id="import-monitors">Import Monitors</h2>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>curl <span class="nt">-sS</span> <span class="nt">-X</span> POST https://observer.example.com/api/import/monitors <span class="se">\</span>
+  <span class="nt">-H</span> <span class="s2">"Authorization: Bearer ACCESS_TOKEN"</span> <span class="se">\</span>
+  <span class="nt">-H</span> <span class="s2">"Content-Type: application/json"</span> <span class="se">\</span>
+  <span class="nt">--data</span> @monitors.json
+</code></pre></div></div>
+
+<p>Unknown keys are ignored during import to avoid writing unsafe runtime fields such as IDs or current status.</p>
+
+<h2 id="server-sent-events">Server-Sent Events</h2>
+
+<p>The dashboard uses SSE:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>GET /api/sse/dashboard
+</code></pre></div></div>
+
+<p>Events are emitted when check results are processed. Use the dashboard as the primary SSE client unless you are building an integration.</p>
+:ET

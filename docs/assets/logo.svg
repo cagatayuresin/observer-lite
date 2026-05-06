@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120" role="img" aria-labelledby="title">
+  <title id="title">Observer Lite</title>
+  <rect width="120" height="120" rx="28" fill="#2563eb" fill-opacity="0.18"/>
+  <circle cx="60" cy="60" r="40" fill="#3b82f6" fill-opacity="0.15"/>
+  <circle cx="60" cy="60" r="24" fill="#3b82f6" fill-opacity="0.35"/>
+  <circle cx="60" cy="60" r="10" fill="#3b82f6"/>
+</svg>
