@@ -1,0 +1,25 @@
+services:
+  observer-lite:
+    build: .
+    image: observer-lite:latest
+    container_name: observer-lite
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - observer_data:/data
+    environment:
+      PORT: "3000"
+      SECRET_KEY: "change-this-to-a-long-random-secret-key"
+      DATABASE_PATH: "/data/observer.db"
+      DATABASE_URL: "sqlite+aiosqlite:////data/observer.db"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:3000/api/docs')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+volumes:
+  observer_data:
+    driver: local

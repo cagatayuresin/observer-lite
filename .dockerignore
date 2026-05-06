@@ -1,0 +1,57 @@
+# ── Git & IDE ──────────────────────────────────────────────────────────────────
+.git
+.gitignore
+.gitattributes
+.github
+.claude
+.vscode
+.idea
+
+# ── Documentation (not needed in image) ───────────────────────────────────────
+*.md
+LICENSE
+SECURITY.md
+CONTRIBUTING.md
+CHANGELOG.md
+VERSION
+
+# ── Python ────────────────────────────────────────────────────────────────────
+backend/.venv
+backend/__pycache__
+backend/**/__pycache__
+backend/**/*.pyc
+backend/**/*.pyo
+backend/**/*.pyd
+backend/.pytest_cache
+backend/.coverage
+backend/htmlcov
+backend/.mypy_cache
+backend/.ruff_cache
+backend/dist
+backend/*.egg-info
+
+# ── Node / Frontend ───────────────────────────────────────────────────────────
+frontend/node_modules
+frontend/dist          # built by the Dockerfile itself
+frontend/.cache
+frontend/.turbo
+
+# ── Test artefacts ────────────────────────────────────────────────────────────
+backend/tests
+backend/pytest.ini
+backend/pyproject.toml   # deps already installed; toml not needed at runtime
+
+# ── Local data & secrets ──────────────────────────────────────────────────────
+*.db
+*.db-wal
+*.db-shm
+data/
+.env
+.env.*
+!.env.example
+
+# ── Misc ──────────────────────────────────────────────────────────────────────
+*.log
+*.tmp
+.DS_Store
+Thumbs.db

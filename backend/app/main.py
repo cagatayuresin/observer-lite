@@ -1,0 +1,177 @@
+"""FastAPI application factory and lifespan manager.
+
+On startup the lifespan hook:
+1. Ensures the ``/data`` directory exists.
+2. Seeds the initial ``superadmin`` account and default settings if the
+   ``users`` table is empty.
+3. Starts the APScheduler instance.
+4. Loads a scheduled job for every enabled monitor.
+5. Registers daily maintenance jobs (retention cleanup, SSL scan).
+
+On shutdown the lifespan hook stops the scheduler, closes the shared HTTP
+client, and disposes the SQLAlchemy engine.
+
+The built Vue frontend is served as static files from ``./static/``.  Any
+path not matched by an API route falls back to ``index.html`` so that the
+Vue Router can handle client-side navigation.
+"""
+
+import logging
+import os
+from contextlib import asynccontextmanager
+from datetime import datetime, timezone
+from pathlib import Path
+
+from fastapi import FastAPI
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+from sqlalchemy import select
+
+from app.checkers.http_checker import close_http_client
+from app.config import get_settings
+from app.db.models import AppSetting, Monitor, User
+from app.db.session import AsyncSessionLocal, engine
+from app.routers import (
+    api_keys,
+    audit_log,
+    auth,
+    check_results,
+    groups,
+    heartbeat,
+    import_export,
+    incidents,
+    maintenance,
+    monitors,
+    notifications,
+    settings,
+    sse,
+    stats,
+    users,
+)
+from app.scheduler.engine import scheduler
+from app.scheduler.manager import upsert_monitor_job
+from app.services.auth_service import hash_password
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+logger = logging.getLogger(__name__)
+
+app_settings = get_settings()
+
+
+async def _seed_initial_data():
+    async with AsyncSessionLocal() as db:
+        result = await db.execute(select(User))
+        if result.scalar_one_or_none() is not None:
+            return  # Already seeded
+
+        logger.info("First run detected — creating superadmin user")
+        now = datetime.now(timezone.utc)
+        admin = User(
+            username="admin",
+            email="admin@localhost",
+            password_hash=hash_password("admin"),
+            role="superadmin",
+            force_pw_change=True,
+            created_at=now,
+            updated_at=now,
+        )
+        db.add(admin)
+
+        # Default settings
+        defaults = {
+            "data_retention_days": "90",
+            "app_base_url": f"http://localhost:{app_settings.port}",
+        }
+        for key, value in defaults.items():
+            db.add(AppSetting(key=key, value=value, updated_at=now))
+
+        await db.commit()
+        logger.info("Superadmin created: username=admin password=admin (CHANGE THIS NOW)")
+
+
+async def _load_scheduler_jobs():
+    async with AsyncSessionLocal() as db:
+        result = await db.execute(select(Monitor).where(Monitor.is_enabled.is_(True)))
+        monitors = result.scalars().all()
+        for monitor in monitors:
+            try:
+                upsert_monitor_job(monitor)
+            except Exception as e:
+                logger.error("Failed to schedule monitor %d: %s", monitor.id, e)
+        logger.info("Scheduled %d monitor jobs", len(monitors))
+
+
+async def _register_background_jobs():
+    from apscheduler.triggers.cron import CronTrigger
+    from app.scheduler.jobs import run_daily_retention, run_daily_ssl_scan
+
+    scheduler.add_job(
+        run_daily_retention,
+        trigger=CronTrigger(hour=2, minute=0),
+        id="daily_retention",
+        replace_existing=True,
+    )
+    scheduler.add_job(
+        run_daily_ssl_scan,
+        trigger=CronTrigger(hour=6, minute=0),
+        id="daily_ssl_scan",
+        replace_existing=True,
+    )
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Ensure data directory exists
+    os.makedirs(os.path.dirname(app_settings.database_path), exist_ok=True)
+
+    await _seed_initial_data()
+    scheduler.start()
+    await _load_scheduler_jobs()
+    await _register_background_jobs()
+    logger.info("Observer-Lite started on port %d", app_settings.port)
+
+    yield
+
+    scheduler.shutdown(wait=False)
+    await close_http_client()
+    await engine.dispose()
+    logger.info("Observer-Lite stopped")
+
+
+app = FastAPI(
+    title="Observer-Lite",
+    version="0.1.0",
+    lifespan=lifespan,
+    docs_url="/api/docs",
+    redoc_url=None,
+)
+
+# API routers
+app.include_router(auth.router)
+app.include_router(users.router)
+app.include_router(monitors.router)
+app.include_router(stats.router)
+app.include_router(groups.router)
+app.include_router(incidents.router)
+app.include_router(check_results.router)
+app.include_router(notifications.router)
+app.include_router(maintenance.router)
+app.include_router(heartbeat.router)
+app.include_router(api_keys.router)
+app.include_router(settings.router)
+app.include_router(audit_log.router)
+app.include_router(sse.router)
+app.include_router(import_export.router)
+
+# Static files (built frontend)
+_static_dir = Path(__file__).parent.parent / "static"
+if _static_dir.exists():
+    app.mount("/assets", StaticFiles(directory=str(_static_dir / "assets")), name="assets")
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def spa_fallback(full_path: str):
+        # Serve static files that exist, otherwise fall back to index.html
+        file_path = _static_dir / full_path
+        if file_path.exists() and file_path.is_file():
+            return FileResponse(str(file_path))
+        return FileResponse(str(_static_dir / "index.html"))

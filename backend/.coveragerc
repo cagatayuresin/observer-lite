@@ -1,0 +1,20 @@
+[run]
+concurrency = thread
+source = app
+omit =
+    app/db/models/__init__.py
+    app/__init__.py
+    app/db/__init__.py
+    app/routers/__init__.py
+    app/schemas/__init__.py
+    app/services/__init__.py
+    app/scheduler/__init__.py
+    app/sse/__init__.py
+    app/utils/__init__.py
+
+[report]
+exclude_lines =
+    pragma: no cover
+    if TYPE_CHECKING:
+    raise NotImplementedError
+    \.\.\.
