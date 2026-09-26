@@ -9,7 +9,7 @@ in :func:`app.main._register_background_jobs` (system-wide daily jobs).
 """
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import select
 
@@ -47,13 +47,13 @@ async def run_monitor_check(monitor_id: int) -> None:
 
         # SSL side-check
         if monitor.ssl_check_enabled and monitor.url.startswith("https://"):
-            is_valid, days, err = await ssl_check(monitor.url)
+            is_valid, days, _err = await ssl_check(monitor.url)
             check_result.is_ssl_valid = is_valid
             check_result.ssl_expiry_days = days
             if days is not None and days <= monitor.ssl_expiry_warning_days:
                 try:
                     await notify_ssl_warning(db, monitor, days)
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001 — a notification failure must not fail the check
                     logger.error("SSL warning notification failed: %s", e)
 
         await process_result(db, monitor, check_result)
@@ -83,7 +83,7 @@ async def _perform_check(monitor: Monitor) -> CheckResult:
 
 
 async def _check_heartbeat(db, monitor: Monitor) -> None:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     last_ping = monitor.heartbeat_last_ping
     grace = monitor.heartbeat_grace_seconds
     interval = monitor.check_interval_seconds
@@ -97,7 +97,7 @@ async def _check_heartbeat(db, monitor: Monitor) -> None:
 
 
 async def _in_maintenance(db, monitor_id: int) -> bool:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     result = await db.execute(
         select(MaintenanceWindow)
         .join(MaintenanceWindowMonitor, MaintenanceWindowMonitor.window_id == MaintenanceWindow.id)
@@ -113,7 +113,7 @@ async def _in_maintenance(db, monitor_id: int) -> bool:
 async def run_daily_retention() -> None:
     try:
         await run_retention_cleanup()
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 — retention must not crash the daily job
         logger.error("Retention cleanup failed: %s", e)
 
 
@@ -133,8 +133,8 @@ async def run_daily_ssl_scan() -> None:
             if not monitor.url.startswith("https://"):
                 continue
             try:
-                is_valid, days, _ = await ssl_check(monitor.url)
+                _is_valid, days, _err = await ssl_check(monitor.url)
                 if days is not None and days <= monitor.ssl_expiry_warning_days:
                     await notify_ssl_warning(db, monitor, days)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 — one monitor must not abort the daily scan
                 logger.error("SSL scan failed for monitor %d: %s", monitor.id, e)

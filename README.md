@@ -10,8 +10,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/cagatayuresin/observer-lite/releases/tag/v0.2.0">
-    <img src="https://img.shields.io/badge/version-0.2.0-blue?style=flat-square" alt="Version 0.2.0" />
+  <a href="https://github.com/cagatayuresin/observer-lite/releases/tag/v0.2.1">
+    <img src="https://img.shields.io/badge/version-0.2.1-blue?style=flat-square" alt="Version 0.2.1" />
   </a>
   <a href="LICENSE">
     <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="MIT License" />
@@ -52,7 +52,7 @@ https://cagatayuresin.github.io/observer-lite/
 | **Incidents** | Automatic open/close lifecycle, acknowledgement, root cause tracking |
 | **Maintenance Windows** | Suppress alerts during planned downtime, optional cron repeat |
 | **Real-time Dashboard** | Server-Sent Events (SSE) push — no polling required |
-| **User Management** | Roles: `superadmin`, `admin`, `viewer`; forced password change on first login |
+| **User Management** | Roles: `superadmin`, `admin`, `viewer`; viewers see only monitors they created or are assigned to; forced password change on first login |
 | **API Keys** | `obs_`-prefixed keys, SHA-256 hashed storage, per-key last-used tracking |
 | **Audit Log** | Immutable record of all user actions |
 | **Import / Export** | JSON-based monitor configuration portability |
@@ -272,12 +272,12 @@ ghcr.io/cagatayuresin/observer-lite:main
 Release tags include:
 
 ```text
-ghcr.io/cagatayuresin/observer-lite:0.2.0
-ghcr.io/cagatayuresin/observer-lite:v0.2.0
+ghcr.io/cagatayuresin/observer-lite:0.2.1
+ghcr.io/cagatayuresin/observer-lite:v0.2.1
 ghcr.io/cagatayuresin/observer-lite:0.2
 ```
 
-When pushing a Git tag, use the `v`-prefixed form that matches `VERSION`, for example `v0.2.0`.
+When pushing a Git tag, use the `v`-prefixed form that matches `VERSION`, for example `v0.2.1`.
 
 ---
 

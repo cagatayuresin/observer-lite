@@ -1,13 +1,13 @@
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, Query
+from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import AuditLog, User
 from app.db.session import get_db
 from app.dependencies import require_superadmin
-from pydantic import BaseModel
 
 
 class AuditLogOut(BaseModel):

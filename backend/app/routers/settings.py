@@ -4,7 +4,7 @@ Settings are stored as key-value pairs in the ``app_settings`` table.
 Sensitive values (e.g. ``smtp_password_enc``) are masked in GET responses.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends
 from sqlalchemy import select
@@ -37,7 +37,7 @@ async def update_settings(
     db: AsyncSession = Depends(get_db),
 ):
     """Create or update application settings from a partial key-value payload."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     for key, value in body.items():
         result = await db.execute(select(AppSetting).where(AppSetting.key == key))
         setting = result.scalar_one_or_none()
@@ -58,7 +58,8 @@ async def test_smtp(_: User = Depends(require_superadmin), db: AsyncSession = De
     settings_rows = result.scalars().all()
     cfg = {s.key: s.value for s in settings_rows}
     # Import lazily so normal settings reads do not pull in SMTP dependencies.
-    import json  # noqa: PLC0415 — deferred to keep top-level imports clean
+    import json
+
     from app.services.email_service import test_email_channel
     ok = await test_email_channel(json.dumps({
         "smtp_host": cfg.get("smtp_host", ""),
@@ -69,6 +70,6 @@ async def test_smtp(_: User = Depends(require_superadmin), db: AsyncSession = De
         "recipients": [cfg.get("smtp_from", "")],
     }))
     if not ok:
-        from fastapi import HTTPException  # noqa: PLC0415
+        from fastapi import HTTPException
         raise HTTPException(502, "SMTP test failed — check settings")
     return {"message": "SMTP test successful"}

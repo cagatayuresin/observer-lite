@@ -1,7 +1,7 @@
 """Notification channel CRUD and test-send endpoints."""
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
@@ -25,7 +25,7 @@ async def list_channels(_: User = Depends(require_admin), db: AsyncSession = Dep
 
 @router.post("", response_model=ChannelOut, status_code=201)
 async def create_channel(body: ChannelCreate, current_user: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     channel = NotificationChannel(
         name=body.name,
         channel_type=body.channel_type,
@@ -62,7 +62,7 @@ async def update_channel(channel_id: int, body: ChannelUpdate, _: User = Depends
         channel.config = json.dumps(body.config)
     if body.is_enabled is not None:
         channel.is_enabled = body.is_enabled
-    channel.updated_at = datetime.now(timezone.utc)
+    channel.updated_at = datetime.now(UTC)
     await db.commit()
     await db.refresh(channel)
     return channel

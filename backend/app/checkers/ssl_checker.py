@@ -8,7 +8,7 @@ many days remain until expiry.
 import asyncio
 import socket
 import ssl
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from urllib.parse import urlparse
 
 
@@ -27,18 +27,20 @@ def _check_ssl_sync(hostname: str, port: int = 443) -> tuple[bool, int | None, s
     """
     ctx = ssl.create_default_context()
     try:
-        with socket.create_connection((hostname, port), timeout=10) as sock:
-            with ctx.wrap_socket(sock, server_hostname=hostname) as ssock:
-                cert = ssock.getpeercert()
-                not_after = cert.get("notAfter")
-                if not_after:
-                    expire_dt = datetime.strptime(not_after, "%b %d %H:%M:%S %Y %Z").replace(tzinfo=timezone.utc)
-                    days = (expire_dt - datetime.now(timezone.utc)).days
-                    return True, days, None
-                return True, None, None
+        with (
+            socket.create_connection((hostname, port), timeout=10) as sock,
+            ctx.wrap_socket(sock, server_hostname=hostname) as ssock,
+        ):
+            cert = ssock.getpeercert()
+            not_after = cert.get("notAfter")
+            if not_after:
+                expire_dt = datetime.strptime(not_after, "%b %d %H:%M:%S %Y %Z").replace(tzinfo=UTC)
+                days = (expire_dt - datetime.now(UTC)).days
+                return True, days, None
+            return True, None, None
     except ssl.SSLCertVerificationError as e:
         return False, None, str(e)
-    except Exception as e:
+    except (OSError, ValueError, AttributeError) as e:
         return False, None, str(e)
 
 

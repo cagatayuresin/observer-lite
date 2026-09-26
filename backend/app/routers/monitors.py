@@ -1,25 +1,35 @@
 """Monitor CRUD, lifecycle control, bulk operations, and assignment endpoints."""
 
-from datetime import datetime, timezone
 import secrets
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models import Monitor, MonitorUser, MonitorNotificationChannel, User
+from app.db.models import Monitor, MonitorNotificationChannel, MonitorUser, User
 from app.db.session import get_db
 from app.dependencies import get_current_user, require_admin
-from app.schemas.monitor import MonitorBulkAction, MonitorCreate, MonitorOut, MonitorPatch, MonitorUpdate
-from app.schemas.notification import MonitorChannelAssign
-from app.scheduler.manager import pause_monitor_job, remove_monitor_job, upsert_monitor_job
 from app.scheduler.jobs import run_monitor_check
+from app.scheduler.manager import (
+    pause_monitor_job,
+    remove_monitor_job,
+    upsert_monitor_job,
+)
+from app.schemas.monitor import (
+    MonitorBulkAction,
+    MonitorCreate,
+    MonitorOut,
+    MonitorPatch,
+    MonitorUpdate,
+)
+from app.schemas.notification import MonitorChannelAssign
 
 router = APIRouter(prefix="/api/monitors", tags=["monitors"])
 
 
 def _now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def _is_privileged(user: User) -> bool:

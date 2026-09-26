@@ -1,7 +1,7 @@
 """Shared data structures used by all checker implementations."""
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 
 @dataclass
@@ -36,4 +36,4 @@ class CheckResult:
 
     def __post_init__(self):
         if self.checked_at is None:
-            self.checked_at = datetime.now(timezone.utc)
+            self.checked_at = datetime.now(UTC)

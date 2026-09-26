@@ -70,6 +70,17 @@ curl -H "Authorization: Bearer obs_YOUR_KEY" \
 | Realtime | `/api/sse/dashboard` |
 | Heartbeat | `/api/heartbeat/{token}` |
 
+## Monitor visibility
+
+`GET /api/monitors` and `GET /api/monitors/{id}` are scoped to the caller:
+
+| Role | Visible monitors | `heartbeat_token` |
+| --- | --- | --- |
+| `admin`, `superadmin` | Every monitor | Included |
+| `viewer` | Monitors the user created or is assigned to | Omitted |
+
+A viewer request for an unassigned monitor returns `404`. Creating, updating, and deleting monitors still requires an admin role. The heartbeat ingest endpoints stay unauthenticated and accept only the token.
+
 ## Create a Monitor
 
 ```bash

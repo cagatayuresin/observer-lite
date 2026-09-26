@@ -17,13 +17,14 @@ passes through :func:`process_result`, which:
 """
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.checkers.base import CheckResult
-from app.db.models import CheckResult as DBCheckResult, Incident, Monitor
+from app.db.models import CheckResult as DBCheckResult
+from app.db.models import Incident, Monitor
 from app.services.notification_service import notify_down, notify_recovery
 from app.sse.broadcaster import broadcaster
 
@@ -48,7 +49,7 @@ async def process_result(db: AsyncSession, monitor: Monitor, result: CheckResult
     # Persist check result
     db_result = DBCheckResult(
         monitor_id=monitor.id,
-        checked_at=result.checked_at or datetime.now(timezone.utc),
+        checked_at=result.checked_at or datetime.now(UTC),
         status=result.status,
         response_time_ms=result.response_time_ms,
         status_code=result.status_code,
@@ -67,9 +68,9 @@ async def process_result(db: AsyncSession, monitor: Monitor, result: CheckResult
 
     prev_status = monitor.current_status
     monitor.current_status = result.status
-    monitor.last_checked_at = result.checked_at or datetime.now(timezone.utc)
+    monitor.last_checked_at = result.checked_at or datetime.now(UTC)
     monitor.last_response_time_ms = result.response_time_ms
-    monitor.updated_at = datetime.now(timezone.utc)
+    monitor.updated_at = datetime.now(UTC)
 
     # --- Incident logic ---
     open_incident = await _get_open_incident(db, monitor.id)
@@ -80,7 +81,7 @@ async def process_result(db: AsyncSession, monitor: Monitor, result: CheckResult
                 # Open a new incident
                 open_incident = Incident(
                     monitor_id=monitor.id,
-                    started_at=datetime.now(timezone.utc),
+                    started_at=datetime.now(UTC),
                     root_cause=result.error_message,
                 )
                 db.add(open_incident)
@@ -95,13 +96,13 @@ async def process_result(db: AsyncSession, monitor: Monitor, result: CheckResult
                 await db.flush()
                 try:
                     await notify_down(db, monitor, open_incident)
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001 — alert delivery must not roll back the incident
                     logger.error("Down notification failed: %s", e)
 
     else:
         # Recovery
         if open_incident is not None:
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             open_incident.resolved_at = now
             open_incident.duration_seconds = int((now - open_incident.started_at).total_seconds())
             await db.flush()
@@ -111,7 +112,7 @@ async def process_result(db: AsyncSession, monitor: Monitor, result: CheckResult
                 await db.flush()
                 try:
                     await notify_recovery(db, monitor, open_incident)
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001 — alert delivery must not roll back the incident
                     logger.error("Recovery notification failed: %s", e)
 
     await db.commit()
@@ -122,7 +123,7 @@ async def process_result(db: AsyncSession, monitor: Monitor, result: CheckResult
         "status": result.status,
         "prev_status": prev_status,
         "response_time_ms": result.response_time_ms,
-        "checked_at": (result.checked_at or datetime.now(timezone.utc)).isoformat(),
+        "checked_at": (result.checked_at or datetime.now(UTC)).isoformat(),
     })
 
 
@@ -130,7 +131,7 @@ async def _get_open_incident(db: AsyncSession, monitor_id: int) -> Incident | No
     result = await db.execute(
         select(Incident).where(
             Incident.monitor_id == monitor_id,
-            Incident.resolved_at == None,  # noqa: E711
+            Incident.resolved_at == None,
         )
     )
     return result.scalar_one_or_none()

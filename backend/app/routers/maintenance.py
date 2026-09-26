@@ -5,7 +5,7 @@ record stores the time range and behavior, while the join table links it to the
 monitors that should be muted.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
@@ -30,7 +30,7 @@ async def list_windows(_: User = Depends(get_current_user), db: AsyncSession = D
 @router.post("", response_model=MaintenanceOut, status_code=201)
 async def create_window(body: MaintenanceCreate, current_user: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
     """Create a maintenance window and attach the selected monitors."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     window = MaintenanceWindow(
         name=body.name,
         starts_at=body.starts_at,

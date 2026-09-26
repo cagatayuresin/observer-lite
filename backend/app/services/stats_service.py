@@ -6,7 +6,7 @@ Results are returned as a :class:`~app.schemas.stats.MonitorStats` Pydantic
 model for direct serialisation by the stats router.
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -30,7 +30,7 @@ async def get_monitor_stats(db: AsyncSession, monitor_id: int, days: int = 30) -
     Returns:
         A populated :class:`~app.schemas.stats.MonitorStats` instance.
     """
-    since = datetime.now(timezone.utc) - timedelta(days=days)
+    since = datetime.now(UTC) - timedelta(days=days)
 
     # Total checks
     total_result = await db.execute(

@@ -5,7 +5,7 @@ filters.  They do not own monitors directly; deleting a group leaves monitors
 in place with their ``group_id`` cleared by the database foreign-key rule.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -46,7 +46,7 @@ async def list_groups(_: User = Depends(get_current_user), db: AsyncSession = De
 @router.post("", response_model=GroupOut, status_code=201)
 async def create_group(body: GroupCreate, current_user: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
     """Create a new group owned by the current admin user."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     group = MonitorGroup(name=body.name, description=body.description, created_by=current_user.id, created_at=now)
     db.add(group)
     await db.commit()

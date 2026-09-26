@@ -19,7 +19,7 @@ Vue Router can handle client-side navigation.
 import logging
 import os
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -70,7 +70,7 @@ def _read_app_version() -> str:
         version_file = parent / "VERSION"
         if version_file.exists():
             return version_file.read_text(encoding="utf-8").strip()
-    return "0.2.0"
+    return "0.2.1"
 
 
 async def _seed_initial_data():
@@ -81,7 +81,7 @@ async def _seed_initial_data():
             return  # Already seeded
 
         logger.info("First run detected — creating superadmin user")
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         admin = User(
             username="admin",
             email="admin@localhost",
@@ -113,7 +113,7 @@ async def _load_scheduler_jobs():
         for monitor in monitors:
             try:
                 upsert_monitor_job(monitor)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 — one bad monitor must not stop startup
                 logger.error("Failed to schedule monitor %d: %s", monitor.id, e)
         logger.info("Scheduled %d monitor jobs", len(monitors))
 
@@ -121,6 +121,7 @@ async def _load_scheduler_jobs():
 async def _register_background_jobs():
     """Register once-per-day maintenance jobs that are independent of monitors."""
     from apscheduler.triggers.cron import CronTrigger
+
     from app.scheduler.jobs import run_daily_retention, run_daily_ssl_scan
 
     scheduler.add_job(

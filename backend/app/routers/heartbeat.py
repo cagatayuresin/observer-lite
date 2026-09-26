@@ -6,7 +6,7 @@ last-seen timestamp and clears transient failure counters so the scheduler can
 detect silence later.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, HTTPException
 from sqlalchemy import select
@@ -33,11 +33,11 @@ async def _handle_heartbeat(token: str):
             raise HTTPException(404, "Unknown heartbeat token")
         # A heartbeat is an explicit "I am alive" signal, so it resets the
         # live status immediately instead of waiting for the next scheduler run.
-        monitor.heartbeat_last_ping = datetime.now(timezone.utc)
+        monitor.heartbeat_last_ping = datetime.now(UTC)
         monitor.current_status = "up"
         monitor.last_checked_at = monitor.heartbeat_last_ping
         monitor.consecutive_failures = 0
-        monitor.updated_at = datetime.now(timezone.utc)
+        monitor.updated_at = datetime.now(UTC)
         await db.commit()
         return {"message": "ok", "monitor": monitor.name}
 

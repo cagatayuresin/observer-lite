@@ -18,6 +18,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 import aiosmtplib
+from cryptography.fernet import InvalidToken
 
 from app.utils.crypto import decrypt
 
@@ -40,7 +41,7 @@ async def send_email(channel_config_json: str, subject: str, body_html: str) -> 
 
         try:
             password = decrypt(password_enc) if password_enc else ""
-        except Exception:
+        except (InvalidToken, ValueError, TypeError):
             password = password_enc  # fallback for plain passwords
 
         msg = MIMEMultipart("alternative")
@@ -59,7 +60,7 @@ async def send_email(channel_config_json: str, subject: str, body_html: str) -> 
             start_tls=not use_tls,
         )
         return True
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 — delivery failures return false instead of raising
         logger.error("Email send failed: %s", e)
         return False
 

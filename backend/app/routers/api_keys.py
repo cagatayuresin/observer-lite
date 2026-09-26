@@ -5,7 +5,7 @@ Only a SHA-256 hash and short display prefix are stored, so the raw key is
 shown exactly once in the create response.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
@@ -38,7 +38,7 @@ async def list_keys(current_user: User = Depends(get_current_user), db: AsyncSes
 async def create_key(body: ApiKeyCreate, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     """Create a new API key and return its one-time plaintext value."""
     raw_key, key_hash, key_prefix = generate_api_key()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     # Store only the irreversible hash; key_prefix is safe display metadata
     # used by the UI so users can distinguish keys later.
     api_key = ApiKey(

@@ -1,6 +1,6 @@
 """User management endpoints (superadmin only)."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
@@ -34,7 +34,7 @@ async def create_user(
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=409, detail="Username already exists")
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     user = User(
         username=body.username,
         email=body.email,
@@ -80,7 +80,7 @@ async def update_user(
         user.role = body.role
     if body.is_active is not None:
         user.is_active = body.is_active
-    user.updated_at = datetime.now(timezone.utc)
+    user.updated_at = datetime.now(UTC)
     await db.commit()
     await db.refresh(user)
     return user
@@ -114,5 +114,5 @@ async def reset_password(
         raise HTTPException(status_code=404, detail="User not found")
     user.password_hash = hash_password("password123")
     user.force_pw_change = True
-    user.updated_at = datetime.now(timezone.utc)
+    user.updated_at = datetime.now(UTC)
     await db.commit()

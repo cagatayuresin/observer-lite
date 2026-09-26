@@ -128,7 +128,11 @@ SSL warning notifications are controlled per notification channel assignment.
 
 Heartbeat monitors are passive. Your service calls Observer Lite to prove that it is still alive.
 
-When you create a heartbeat monitor, Observer Lite generates a token. Use either endpoint:
+When you create a heartbeat monitor, Observer Lite generates a token. The token is a shared secret for the unauthenticated heartbeat endpoint, so the API returns it only to `admin`, `superadmin`, and the user who created the monitor. A `viewer` can see a heartbeat monitor they created or were assigned to, but the token field is empty for them.
+
+`admin` and `superadmin` can list and open every monitor. Other users only receive monitors they created or are assigned to. An unassigned monitor is omitted from the list and returns not found on direct lookup.
+
+Use either endpoint:
 
 ```text
 GET /api/heartbeat/{token}

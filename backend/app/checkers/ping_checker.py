@@ -57,6 +57,6 @@ async def ping_check(url: str, timeout_seconds: int, response_time_warning_ms: i
     except TimeoutError:
         elapsed_ms = int((time.monotonic() - start) * 1000)
         return CheckResult(status="down", response_time_ms=elapsed_ms, error_message="Ping timed out")
-    except Exception as exc:
+    except (OSError, UnicodeError) as exc:
         elapsed_ms = int((time.monotonic() - start) * 1000)
         return CheckResult(status="down", response_time_ms=elapsed_ms, error_message=str(exc)[:255])

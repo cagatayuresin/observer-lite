@@ -15,7 +15,6 @@ import httpx
 from app.checkers.base import CheckResult
 from app.checkers.matchers import matches_body, matches_status_code
 
-
 _client: httpx.AsyncClient | None = None
 
 
@@ -83,7 +82,7 @@ async def http_check(
     """
     try:
         headers = json.loads(headers_json) if headers_json else {}
-    except Exception:
+    except (json.JSONDecodeError, TypeError):
         headers = {}
 
     client = get_http_client()
@@ -124,6 +123,6 @@ async def http_check(
     except httpx.TimeoutException:
         elapsed_ms = int((time.monotonic() - start) * 1000)
         return CheckResult(status="down", response_time_ms=elapsed_ms, error_message="Connection timed out")
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 — any probe failure is a down result
         elapsed_ms = int((time.monotonic() - start) * 1000)
         return CheckResult(status="down", response_time_ms=elapsed_ms, error_message=str(exc)[:255])

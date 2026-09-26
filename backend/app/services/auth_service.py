@@ -5,7 +5,7 @@ All JWT operations use the ``HS256`` algorithm by default, configurable via
 invalid tokens should catch :class:`jose.JWTError`.
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import bcrypt
 from jose import jwt
@@ -53,7 +53,7 @@ def create_access_token(user_id: int, role: str) -> str:
     Returns:
         Signed JWT string.
     """
-    expire = datetime.now(timezone.utc) + timedelta(minutes=settings.access_token_expire_minutes)
+    expire = datetime.now(UTC) + timedelta(minutes=settings.access_token_expire_minutes)
     payload = {"sub": str(user_id), "role": role, "type": "access", "exp": expire}
     return jwt.encode(payload, settings.secret_key, algorithm=ALGORITHM)
 
@@ -70,7 +70,7 @@ def create_refresh_token(user_id: int) -> str:
     Returns:
         Signed JWT string.
     """
-    expire = datetime.now(timezone.utc) + timedelta(days=settings.refresh_token_expire_days)
+    expire = datetime.now(UTC) + timedelta(days=settings.refresh_token_expire_days)
     payload = {"sub": str(user_id), "type": "refresh", "exp": expire}
     return jwt.encode(payload, settings.secret_key, algorithm=ALGORITHM)
 

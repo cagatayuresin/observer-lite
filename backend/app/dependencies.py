@@ -8,6 +8,8 @@ This module provides:
 - Pre-built shortcuts :data:`require_admin` and :data:`require_superadmin`.
 """
 
+from datetime import UTC
+
 from fastapi import Depends, HTTPException, Security, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError
@@ -68,8 +70,8 @@ async def get_current_user(
         if api_key is None:
             raise credentials_exception
         # Update last_used
-        from datetime import datetime, timezone
-        api_key.last_used_at = datetime.now(timezone.utc)
+        from datetime import datetime
+        api_key.last_used_at = datetime.now(UTC)
         await db.commit()
         result = await db.execute(select(User).where(User.id == api_key.user_id))
         user = result.scalar_one_or_none()

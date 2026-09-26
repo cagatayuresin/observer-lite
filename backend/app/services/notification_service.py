@@ -14,7 +14,12 @@ from datetime import timedelta
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models import Incident, Monitor, MonitorNotificationChannel, NotificationChannel
+from app.db.models import (
+    Incident,
+    Monitor,
+    MonitorNotificationChannel,
+    NotificationChannel,
+)
 from app.services.email_service import send_email
 from app.services.telegram_service import send_telegram
 

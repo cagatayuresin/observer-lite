@@ -1,6 +1,6 @@
 """Incident list, detail, and acknowledgement endpoints."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
@@ -47,5 +47,5 @@ async def acknowledge(incident_id: int, current_user: User = Depends(require_adm
     if not inc:
         raise HTTPException(404, "Incident not found")
     inc.acknowledged_by = current_user.id
-    inc.acknowledged_at = datetime.now(timezone.utc)
+    inc.acknowledged_at = datetime.now(UTC)
     await db.commit()

@@ -48,6 +48,8 @@ The following design decisions are documented to help security researchers under
 
 ### Network
 - All monitor check results, incidents, and notifications are scoped to authenticated users.
+- `GET /api/monitors` and `GET /api/monitors/{id}` return every monitor to `admin` and `superadmin`. Other roles only receive monitors they created or are assigned to. Unassigned monitors respond as not found.
+- `heartbeat_token` is included in monitor responses only for `admin`, `superadmin`, and the creating user. It is the shared secret for the heartbeat ingest endpoint and is not shown to unrelated viewers.
 - The SSE stream requires a valid JWT passed as a query parameter (EventSource does not support custom headers).
 - Heartbeat endpoints are intentionally unauthenticated (token-based) but rate-limited to 1 request per 10 seconds per token.
 

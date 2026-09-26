@@ -7,7 +7,7 @@ administrators can change it without restarting the application.
 """
 
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import delete, select
 
@@ -28,7 +28,7 @@ async def run_retention_cleanup() -> None:
         setting = result.scalar_one_or_none()
         retention_days = int(setting.value) if setting else 90
 
-        cutoff = datetime.now(timezone.utc) - timedelta(days=retention_days)
+        cutoff = datetime.now(UTC) - timedelta(days=retention_days)
         total_deleted = 0
 
         while True:

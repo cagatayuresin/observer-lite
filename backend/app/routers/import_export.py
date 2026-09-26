@@ -5,7 +5,7 @@ re-created on another installation.  Runtime state such as current status,
 heartbeat tokens, incidents, and check history is excluded.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
@@ -37,7 +37,7 @@ async def export_monitors(_: User = Depends(require_superadmin), db: AsyncSessio
     result = await db.execute(select(Monitor).order_by(Monitor.id))
     monitors = result.scalars().all()
     data = [{field: getattr(m, field) for field in _EXPORT_FIELDS} for m in monitors]
-    return JSONResponse(content={"version": 1, "monitors": data, "exported_at": datetime.now(timezone.utc).isoformat()})
+    return JSONResponse(content={"version": 1, "monitors": data, "exported_at": datetime.now(UTC).isoformat()})
 
 
 @router.post("/import/monitors")
@@ -49,7 +49,7 @@ async def import_monitors(
     """Import monitor definitions from the JSON format produced by export."""
     monitors_data = body.get("monitors", [])
     created = 0
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     for m_data in monitors_data:
         # Ignore unknown keys to preserve forward compatibility between
         # versions and to avoid mass-assigning fields such as IDs or status.
