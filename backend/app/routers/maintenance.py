@@ -18,6 +18,8 @@ from app.schemas.maintenance import MaintenanceCreate, MaintenanceOut, Maintenan
 
 router = APIRouter(prefix="/api/maintenance", tags=["maintenance"])
 
+_WINDOW_NOT_FOUND = "Maintenance window not found"
+
 
 @router.get("", response_model=list[MaintenanceOut])
 async def list_windows(_: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
@@ -50,23 +52,23 @@ async def create_window(body: MaintenanceCreate, current_user: User = Depends(re
     return await _to_out(db, window)
 
 
-@router.get("/{window_id}", response_model=MaintenanceOut)
+@router.get("/{window_id}", response_model=MaintenanceOut, responses={404: {"description": _WINDOW_NOT_FOUND}})
 async def get_window(window_id: int, _: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     """Return one maintenance window with its monitor IDs."""
     result = await db.execute(select(MaintenanceWindow).where(MaintenanceWindow.id == window_id))
     window = result.scalar_one_or_none()
     if not window:
-        raise HTTPException(404, "Maintenance window not found")
+        raise HTTPException(status_code=404, detail=_WINDOW_NOT_FOUND)
     return await _to_out(db, window)
 
 
-@router.put("/{window_id}", response_model=MaintenanceOut)
+@router.put("/{window_id}", response_model=MaintenanceOut, responses={404: {"description": _WINDOW_NOT_FOUND}})
 async def update_window(window_id: int, body: MaintenanceUpdate, _: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
     """Patch a maintenance window and optionally replace its monitor list."""
     result = await db.execute(select(MaintenanceWindow).where(MaintenanceWindow.id == window_id))
     window = result.scalar_one_or_none()
     if not window:
-        raise HTTPException(404, "Maintenance window not found")
+        raise HTTPException(status_code=404, detail=_WINDOW_NOT_FOUND)
     if body.name is not None:
         window.name = body.name
     if body.starts_at is not None:
@@ -89,13 +91,13 @@ async def update_window(window_id: int, body: MaintenanceUpdate, _: User = Depen
     return await _to_out(db, window)
 
 
-@router.delete("/{window_id}", status_code=204)
+@router.delete("/{window_id}", status_code=204, responses={404: {"description": _WINDOW_NOT_FOUND}})
 async def delete_window(window_id: int, _: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
     """Delete a maintenance window and its join rows."""
     result = await db.execute(select(MaintenanceWindow).where(MaintenanceWindow.id == window_id))
     window = result.scalar_one_or_none()
     if not window:
-        raise HTTPException(404, "Maintenance window not found")
+        raise HTTPException(status_code=404, detail=_WINDOW_NOT_FOUND)
     await db.delete(window)
     await db.commit()
 

@@ -1,10 +1,16 @@
 <template>
   <div
     class="card px-4 py-3 flex items-center gap-4 hover:border-surface-600 transition-colors cursor-pointer"
-    @click="router.push(`/monitors/${monitor.id}`)"
+    role="link"
+    tabindex="0"
+    @click="openMonitor"
+    @keydown.enter="openMonitor"
+    @keydown.space.prevent="openMonitor"
   >
     <!-- Checkbox -->
+    <label :for="selectId" class="sr-only">Select {{ monitor.name }}</label>
     <input
+      :id="selectId"
       type="checkbox"
       :checked="selected"
       @click.stop="emit('toggle-select')"
@@ -45,7 +51,7 @@
     </div>
 
     <!-- Actions -->
-    <div class="flex gap-1 shrink-0" @click.stop>
+    <div class="flex gap-1 shrink-0" @click.stop @keydown.stop>
       <button
         v-if="auth.isAdmin && monitor.is_enabled"
         @click="emit('pause')"
@@ -98,6 +104,11 @@ const auth = useAuthStore()
 const router = useRouter()
 const confirmDelete = ref(false)
 const history = ref<{ id: number; status: string }[]>([])
+const selectId = computed(() => `select-monitor-${props.monitor.id}`)
+
+function openMonitor() {
+  router.push(`/monitors/${props.monitor.id}`)
+}
 
 onMounted(async () => {
   if (props.monitor.current_status !== 'pending') {

@@ -60,64 +60,22 @@ async def process_result(db: AsyncSession, monitor: Monitor, result: CheckResult
     db.add(db_result)
 
     is_failure = result.status == "down"
-
     if is_failure:
         monitor.consecutive_failures += 1
     else:
         monitor.consecutive_failures = 0
 
     prev_status = monitor.current_status
-    monitor.current_status = result.status
-    monitor.last_checked_at = result.checked_at or datetime.now(UTC)
-    monitor.last_response_time_ms = result.response_time_ms
-    monitor.updated_at = datetime.now(UTC)
+    _apply_live_state(monitor, result)
 
-    # --- Incident logic ---
     open_incident = await _get_open_incident(db, monitor.id)
-
     if is_failure:
-        if monitor.consecutive_failures >= monitor.retry_count:
-            if open_incident is None:
-                # Open a new incident
-                open_incident = Incident(
-                    monitor_id=monitor.id,
-                    started_at=datetime.now(UTC),
-                    root_cause=result.error_message,
-                )
-                db.add(open_incident)
-                await db.flush()
-
-            # Send down notification (once per incident, respecting cooldown)
-            if (
-                monitor.alerts_enabled
-                and not open_incident.notification_sent
-            ):
-                open_incident.notification_sent = True
-                await db.flush()
-                try:
-                    await notify_down(db, monitor, open_incident)
-                except Exception as e:  # noqa: BLE001 — alert delivery must not roll back the incident
-                    logger.error("Down notification failed: %s", e)
-
+        await _record_failure(db, monitor, result, open_incident)
     else:
-        # Recovery
-        if open_incident is not None:
-            now = datetime.now(UTC)
-            open_incident.resolved_at = now
-            open_incident.duration_seconds = int((now - open_incident.started_at).total_seconds())
-            await db.flush()
-
-            if monitor.alerts_enabled and not open_incident.recovery_sent:
-                open_incident.recovery_sent = True
-                await db.flush()
-                try:
-                    await notify_recovery(db, monitor, open_incident)
-                except Exception as e:  # noqa: BLE001 — alert delivery must not roll back the incident
-                    logger.error("Recovery notification failed: %s", e)
+        await _record_recovery(db, monitor, open_incident)
 
     await db.commit()
 
-    # SSE broadcast
     broadcaster.publish("monitor.check_result", {
         "monitor_id": monitor.id,
         "status": result.status,
@@ -125,6 +83,65 @@ async def process_result(db: AsyncSession, monitor: Monitor, result: CheckResult
         "response_time_ms": result.response_time_ms,
         "checked_at": (result.checked_at or datetime.now(UTC)).isoformat(),
     })
+
+
+def _apply_live_state(monitor: Monitor, result: CheckResult) -> None:
+    monitor.current_status = result.status
+    monitor.last_checked_at = result.checked_at or datetime.now(UTC)
+    monitor.last_response_time_ms = result.response_time_ms
+    monitor.updated_at = datetime.now(UTC)
+
+
+async def _record_failure(
+    db: AsyncSession,
+    monitor: Monitor,
+    result: CheckResult,
+    open_incident: Incident | None,
+) -> None:
+    if monitor.consecutive_failures < monitor.retry_count:
+        return
+    incident = open_incident
+    if incident is None:
+        incident = Incident(
+            monitor_id=monitor.id,
+            started_at=datetime.now(UTC),
+            root_cause=result.error_message,
+        )
+        db.add(incident)
+        await db.flush()
+    await _notify_down_once(db, monitor, incident)
+
+
+async def _notify_down_once(db: AsyncSession, monitor: Monitor, incident: Incident) -> None:
+    if not monitor.alerts_enabled or incident.notification_sent:
+        return
+    incident.notification_sent = True
+    await db.flush()
+    try:
+        await notify_down(db, monitor, incident)
+    except Exception:  # alert delivery must not roll back the incident
+        logger.exception("Down notification failed")
+
+
+async def _record_recovery(
+    db: AsyncSession,
+    monitor: Monitor,
+    open_incident: Incident | None,
+) -> None:
+    if open_incident is None:
+        return
+    now = datetime.now(UTC)
+    open_incident.resolved_at = now
+    open_incident.duration_seconds = int((now - open_incident.started_at).total_seconds())
+    await db.flush()
+    if not monitor.alerts_enabled or open_incident.recovery_sent:
+        return
+    open_incident.recovery_sent = True
+    await db.flush()
+    try:
+        await notify_recovery(db, monitor, open_incident)
+    except Exception:  # alert delivery must not roll back the incident
+        logger.exception("Recovery notification failed")
 
 
 async def _get_open_incident(db: AsyncSession, monitor_id: int) -> Incident | None:

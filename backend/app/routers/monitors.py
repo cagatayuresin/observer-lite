@@ -1,5 +1,6 @@
 """Monitor CRUD, lifecycle control, bulk operations, and assignment endpoints."""
 
+import asyncio
 import secrets
 from datetime import UTC, datetime
 
@@ -26,6 +27,9 @@ from app.schemas.monitor import (
 from app.schemas.notification import MonitorChannelAssign
 
 router = APIRouter(prefix="/api/monitors", tags=["monitors"])
+
+_MONITOR_NOT_FOUND = "Monitor not found"
+_background_tasks: set[asyncio.Task[None]] = set()
 
 
 def _now() -> datetime:
@@ -105,16 +109,16 @@ async def create_monitor(
     return monitor
 
 
-@router.get("/{monitor_id}", response_model=MonitorOut)
+@router.get("/{monitor_id}", response_model=MonitorOut, responses={404: {"description": _MONITOR_NOT_FOUND}})
 async def get_monitor(monitor_id: int, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Monitor).where(Monitor.id == monitor_id))
     monitor = result.scalar_one_or_none()
     if not monitor or not await _user_can_view_monitor(db, current_user, monitor):
-        raise HTTPException(status_code=404, detail="Monitor not found")
+        raise HTTPException(status_code=404, detail=_MONITOR_NOT_FOUND)
     return _monitor_out(monitor, current_user)
 
 
-@router.put("/{monitor_id}", response_model=MonitorOut)
+@router.put("/{monitor_id}", response_model=MonitorOut, responses={404: {"description": _MONITOR_NOT_FOUND}})
 async def update_monitor(
     monitor_id: int,
     body: MonitorUpdate,
@@ -124,7 +128,7 @@ async def update_monitor(
     result = await db.execute(select(Monitor).where(Monitor.id == monitor_id))
     monitor = result.scalar_one_or_none()
     if not monitor:
-        raise HTTPException(status_code=404, detail="Monitor not found")
+        raise HTTPException(status_code=404, detail=_MONITOR_NOT_FOUND)
 
     update_data = body.model_dump(exclude_unset=True)
     for key, value in update_data.items():
@@ -141,7 +145,7 @@ async def update_monitor(
     return monitor
 
 
-@router.patch("/{monitor_id}", response_model=MonitorOut)
+@router.patch("/{monitor_id}", response_model=MonitorOut, responses={404: {"description": _MONITOR_NOT_FOUND}})
 async def patch_monitor(
     monitor_id: int,
     body: MonitorPatch,
@@ -151,7 +155,7 @@ async def patch_monitor(
     result = await db.execute(select(Monitor).where(Monitor.id == monitor_id))
     monitor = result.scalar_one_or_none()
     if not monitor:
-        raise HTTPException(status_code=404, detail="Monitor not found")
+        raise HTTPException(status_code=404, detail=_MONITOR_NOT_FOUND)
 
     update_data = body.model_dump(exclude_unset=True)
     for key, value in update_data.items():
@@ -169,23 +173,23 @@ async def patch_monitor(
     return monitor
 
 
-@router.delete("/{monitor_id}", status_code=204)
+@router.delete("/{monitor_id}", status_code=204, responses={404: {"description": _MONITOR_NOT_FOUND}})
 async def delete_monitor(monitor_id: int, _: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Monitor).where(Monitor.id == monitor_id))
     monitor = result.scalar_one_or_none()
     if not monitor:
-        raise HTTPException(status_code=404, detail="Monitor not found")
+        raise HTTPException(status_code=404, detail=_MONITOR_NOT_FOUND)
     remove_monitor_job(monitor.id)
     await db.delete(monitor)
     await db.commit()
 
 
-@router.post("/{monitor_id}/pause", status_code=204)
+@router.post("/{monitor_id}/pause", status_code=204, responses={404: {"description": _MONITOR_NOT_FOUND}})
 async def pause_monitor(monitor_id: int, _: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Monitor).where(Monitor.id == monitor_id))
     monitor = result.scalar_one_or_none()
     if not monitor:
-        raise HTTPException(status_code=404, detail="Monitor not found")
+        raise HTTPException(status_code=404, detail=_MONITOR_NOT_FOUND)
     monitor.is_enabled = False
     monitor.current_status = "paused"
     monitor.updated_at = _now()
@@ -193,12 +197,12 @@ async def pause_monitor(monitor_id: int, _: User = Depends(require_admin), db: A
     pause_monitor_job(monitor_id)
 
 
-@router.post("/{monitor_id}/resume", status_code=204)
+@router.post("/{monitor_id}/resume", status_code=204, responses={404: {"description": _MONITOR_NOT_FOUND}})
 async def resume_monitor(monitor_id: int, _: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Monitor).where(Monitor.id == monitor_id))
     monitor = result.scalar_one_or_none()
     if not monitor:
-        raise HTTPException(status_code=404, detail="Monitor not found")
+        raise HTTPException(status_code=404, detail=_MONITOR_NOT_FOUND)
     monitor.is_enabled = True
     monitor.current_status = "pending"
     monitor.updated_at = _now()
@@ -206,14 +210,15 @@ async def resume_monitor(monitor_id: int, _: User = Depends(require_admin), db: 
     upsert_monitor_job(monitor)
 
 
-@router.post("/{monitor_id}/check-now", status_code=202)
+@router.post("/{monitor_id}/check-now", status_code=202, responses={404: {"description": _MONITOR_NOT_FOUND}})
 async def check_now(monitor_id: int, _: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Monitor).where(Monitor.id == monitor_id))
     monitor = result.scalar_one_or_none()
     if not monitor:
-        raise HTTPException(status_code=404, detail="Monitor not found")
-    import asyncio
-    asyncio.create_task(run_monitor_check(monitor_id))
+        raise HTTPException(status_code=404, detail=_MONITOR_NOT_FOUND)
+    task = asyncio.create_task(run_monitor_check(monitor_id))
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
     return {"message": "Check triggered"}
 
 
@@ -249,7 +254,11 @@ async def get_monitor_users(monitor_id: int, _: User = Depends(require_admin), d
     return [{"user_id": mu.user_id, "notify": mu.notify} for mu in result.scalars().all()]
 
 
-@router.post("/{monitor_id}/users", status_code=201)
+@router.post(
+    "/{monitor_id}/users",
+    status_code=201,
+    responses={409: {"description": "User already assigned"}},
+)
 async def assign_user(
     monitor_id: int,
     user_id: int,
@@ -288,7 +297,11 @@ async def get_monitor_channels(monitor_id: int, _: User = Depends(require_admin)
     return [{"channel_id": r.channel_id, "on_down": r.on_down, "on_recovery": r.on_recovery, "on_ssl_warn": r.on_ssl_warn} for r in rows]
 
 
-@router.post("/{monitor_id}/channels", status_code=201)
+@router.post(
+    "/{monitor_id}/channels",
+    status_code=201,
+    responses={409: {"description": "Channel already assigned"}},
+)
 async def assign_channel(
     monitor_id: int,
     body: MonitorChannelAssign,

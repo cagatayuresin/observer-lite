@@ -113,12 +113,12 @@ async def _load_scheduler_jobs():
         for monitor in monitors:
             try:
                 upsert_monitor_job(monitor)
-            except Exception as e:  # noqa: BLE001 — one bad monitor must not stop startup
-                logger.error("Failed to schedule monitor %d: %s", monitor.id, e)
+            except Exception:  # one bad monitor must not stop startup
+                logger.exception("Failed to schedule monitor %d", monitor.id)
         logger.info("Scheduled %d monitor jobs", len(monitors))
 
 
-async def _register_background_jobs():
+def _register_background_jobs():
     """Register once-per-day maintenance jobs that are independent of monitors."""
     from apscheduler.triggers.cron import CronTrigger
 
@@ -148,7 +148,7 @@ async def lifespan(app: FastAPI):
     await _seed_initial_data()
     scheduler.start()
     await _load_scheduler_jobs()
-    await _register_background_jobs()
+    _register_background_jobs()
     logger.info("Observer-Lite started on port %d", app_settings.port)
 
     yield

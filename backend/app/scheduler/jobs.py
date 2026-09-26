@@ -53,8 +53,8 @@ async def run_monitor_check(monitor_id: int) -> None:
             if days is not None and days <= monitor.ssl_expiry_warning_days:
                 try:
                     await notify_ssl_warning(db, monitor, days)
-                except Exception as e:  # noqa: BLE001 — a notification failure must not fail the check
-                    logger.error("SSL warning notification failed: %s", e)
+                except Exception:  # a notification failure must not fail the check
+                    logger.exception("SSL warning notification failed")
 
         await process_result(db, monitor, check_result)
 
@@ -113,8 +113,8 @@ async def _in_maintenance(db, monitor_id: int) -> bool:
 async def run_daily_retention() -> None:
     try:
         await run_retention_cleanup()
-    except Exception as e:  # noqa: BLE001 — retention must not crash the daily job
-        logger.error("Retention cleanup failed: %s", e)
+    except Exception:  # retention must not crash the daily job
+        logger.exception("Retention cleanup failed")
 
 
 async def run_daily_ssl_scan() -> None:
@@ -136,5 +136,5 @@ async def run_daily_ssl_scan() -> None:
                 _is_valid, days, _err = await ssl_check(monitor.url)
                 if days is not None and days <= monitor.ssl_expiry_warning_days:
                     await notify_ssl_warning(db, monitor, days)
-            except Exception as e:  # noqa: BLE001 — one monitor must not abort the daily scan
-                logger.error("SSL scan failed for monitor %d: %s", monitor.id, e)
+            except Exception:  # one monitor must not abort the daily scan
+                logger.exception("SSL scan failed for monitor %d", monitor.id)

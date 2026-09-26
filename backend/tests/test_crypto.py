@@ -1,6 +1,7 @@
 """Unit tests for crypto utilities."""
 
 import pytest
+from cryptography.fernet import InvalidToken
 
 from app.utils.crypto import decrypt, encrypt, generate_api_key, hash_api_key
 
@@ -30,7 +31,7 @@ class TestEncryptDecrypt:
         assert a != b
 
     def test_tampered_ciphertext_raises(self):
-        with pytest.raises(Exception):  # InvalidToken or similar
+        with pytest.raises(InvalidToken):
             decrypt("not-a-valid-fernet-token")
 
 
@@ -60,7 +61,8 @@ class TestGenerateApiKey:
 class TestHashApiKey:
     def test_deterministic(self):
         raw = "obs_abc123"
-        assert hash_api_key(raw) == hash_api_key(raw)
+        first = hash_api_key(raw)
+        assert hash_api_key(raw) == first
 
     def test_length(self):
         assert len(hash_api_key("obs_anything")) == 64

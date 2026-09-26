@@ -16,10 +16,16 @@ import { computed } from 'vue'
 interface DayStat { date: string; uptime: number }
 const props = defineProps<{ data: DayStat[] }>()
 
+function uptimeColor(uptime: number): string {
+  if (uptime >= 99) return 'bg-emerald-500'
+  if (uptime >= 90) return 'bg-amber-500'
+  return 'bg-red-500'
+}
+
 const days = computed(() =>
   props.data.map((d) => ({
     ...d,
-    color: d.uptime >= 99 ? 'bg-emerald-500' : d.uptime >= 90 ? 'bg-amber-500' : 'bg-red-500',
+    color: uptimeColor(d.uptime),
   }))
 )
 </script>

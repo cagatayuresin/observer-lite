@@ -47,8 +47,8 @@
     <!-- Response time chart -->
     <div class="card p-4 mb-6">
       <div class="flex items-center justify-between mb-3">
-        <h2 class="text-sm font-semibold text-white">Response Time (24h)</h2>
-        <select v-model="statDays" @change="loadStats" class="input w-28 text-xs py-1">
+        <label for="response-range" class="text-sm font-semibold text-white">Response Time (24h)</label>
+        <select id="response-range" v-model="statDays" @change="loadStats" class="input w-28 text-xs py-1">
           <option :value="1">1 day</option>
           <option :value="7">7 days</option>
           <option :value="30">30 days</option>

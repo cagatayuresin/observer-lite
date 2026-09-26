@@ -26,6 +26,12 @@ from app.services.telegram_service import send_telegram
 logger = logging.getLogger(__name__)
 
 
+class _AllEvents:
+    on_down = True
+    on_recovery = True
+    on_ssl_warn = True
+
+
 def _fmt_duration(seconds: int | None) -> str:
     if not seconds:
         return "unknown duration"
@@ -99,6 +105,23 @@ async def _dispatch(
     email_body: str,
     telegram_msg: str,
 ) -> None:
+    rows = await _channel_rows(db, monitor_id)
+    tasks = []
+    for mapping, channel in rows:
+        if not _event_enabled(mapping, event):
+            continue
+        delivery = _start_delivery(channel, subject, email_body, telegram_msg)
+        if delivery is not None:
+            tasks.append(delivery)
+    if not tasks:
+        return
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    for result in results:
+        if isinstance(result, Exception):
+            logger.error("Notification delivery failed: %s", result)
+
+
+async def _channel_rows(db: AsyncSession, monitor_id: int) -> list:
     result = await db.execute(
         select(MonitorNotificationChannel, NotificationChannel)
         .join(NotificationChannel, MonitorNotificationChannel.channel_id == NotificationChannel.id)
@@ -108,35 +131,25 @@ async def _dispatch(
         )
     )
     rows = list(result.all())
+    if rows:
+        return rows
+    channels_result = await db.execute(
+        select(NotificationChannel).where(NotificationChannel.is_enabled.is_(True))
+    )
+    return [(_AllEvents(), channel) for channel in channels_result.scalars().all()]
 
-    # Fallback for Observer Lite: if no specific mapping, use all enabled channels
-    if not rows:
-        channels_result = await db.execute(
-            select(NotificationChannel).where(NotificationChannel.is_enabled.is_(True))
-        )
-        for channel in channels_result.scalars().all():
-            class DefaultMapping:
-                on_down = True
-                on_recovery = True
-                on_ssl_warn = True
-            rows.append((DefaultMapping(), channel))
 
-    tasks = []
-    for mnc, channel in rows:
-        if event == "down" and not mnc.on_down:
-            continue
-        if event == "recovery" and not mnc.on_recovery:
-            continue
-        if event == "ssl_warn" and not mnc.on_ssl_warn:
-            continue
+def _event_enabled(mapping, event: str) -> bool:
+    if event == "down":
+        return bool(mapping.on_down)
+    if event == "recovery":
+        return bool(mapping.on_recovery)
+    return bool(mapping.on_ssl_warn)
 
-        if channel.channel_type == "email":
-            tasks.append(send_email(channel.config, subject, email_body))
-        elif channel.channel_type == "telegram":
-            tasks.append(send_telegram(channel.config, telegram_msg))
 
-    if tasks:
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-        for r in results:
-            if isinstance(r, Exception):
-                logger.error("Notification delivery failed: %s", r)
+def _start_delivery(channel: NotificationChannel, subject: str, email_body: str, telegram_msg: str):
+    if channel.channel_type == "email":
+        return send_email(channel.config, subject, email_body)
+    if channel.channel_type == "telegram":
+        return send_telegram(channel.config, telegram_msg)
+    return None

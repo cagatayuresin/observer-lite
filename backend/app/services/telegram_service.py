@@ -36,8 +36,8 @@ async def send_telegram(channel_config_json: str, message: str) -> bool:
                 "disable_notification": disable_notification,
             })
             return resp.status_code == 200
-    except Exception as e:  # noqa: BLE001 — delivery failures return false instead of raising
-        logger.error("Telegram send failed: %s", e)
+    except Exception:  # delivery failures return false instead of raising
+        logger.exception("Telegram send failed")
         return False
 
 

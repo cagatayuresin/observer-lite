@@ -111,7 +111,7 @@ async function handleCreateGroup() {
 }
 
 onMounted(async () => {
-  const [{ data: grps }] = await Promise.all([groupsApi.list()])
+  const { data: grps } = await groupsApi.list()
   groups.value = grps
   if (isEdit.value) {
     const { data } = await monitorsApi.get(monitorId.value)

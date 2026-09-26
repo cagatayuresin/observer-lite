@@ -33,7 +33,7 @@ def get_http_client() -> httpx.AsyncClient:
         _client = httpx.AsyncClient(
             limits=httpx.Limits(max_connections=200, max_keepalive_connections=50),
             follow_redirects=True,
-            verify=False,  # SSL validity is checked separately
+            verify=False,  # NOSONAR — certificate validity is reported by ssl_checker, not this probe
         )
     return _client
 

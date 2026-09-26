@@ -35,7 +35,7 @@ def _get_fernet() -> Fernet:
     kdf = PBKDF2HMAC(
         algorithm=hashes.SHA256(),
         length=32,
-        salt=b"observer-lite-salt",
+        salt=b"observer-lite-salt",  # NOSONAR — stable KDF salt so one SECRET_KEY keeps decrypting stored secrets
         iterations=100_000,
     )
     key = base64.urlsafe_b64encode(kdf.derive(settings.secret_key.encode()))

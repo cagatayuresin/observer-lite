@@ -2,13 +2,13 @@
 
 All JWT operations use the ``HS256`` algorithm by default, configurable via
 :attr:`~app.config.Settings.jwt_algorithm`.  Callers that need to handle
-invalid tokens should catch :class:`jose.JWTError`.
+invalid tokens should catch :class:`jwt.PyJWTError`.
 """
 
 from datetime import UTC, datetime, timedelta
 
 import bcrypt
-from jose import jwt
+import jwt
 
 from app.config import get_settings
 
@@ -85,7 +85,7 @@ def decode_token(token: str) -> dict:
         The decoded claims dictionary.
 
     Raises:
-        jose.JWTError: If the token signature is invalid, the token is
-            expired, or it cannot be decoded.
+        JWTError: If the token signature is invalid, the token is expired,
+            or it cannot be decoded.
     """
     return jwt.decode(token, settings.secret_key, algorithms=[ALGORITHM])

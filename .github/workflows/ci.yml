@@ -33,19 +33,19 @@ jobs:
           python-version: "3.12"
 
       - name: Install uv
-        run: pip install uv --quiet
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
 
       - name: Install dependencies
-        run: |
-          uv pip install --system -e ".[dev]"
-          uv pip install --system pytest-cov ruff
+        run: uv sync --frozen --extra dev
 
       - name: Lint (ruff)
-        run: ruff check app/
+        run: uv run ruff check app/
 
       - name: Test with coverage
         run: |
-          pytest tests/ \
+          uv run pytest tests/ \
             --cov=app \
             --cov-report=term-missing \
             --cov-fail-under=80 \
@@ -69,7 +69,7 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Type check
         run: npm run type-check

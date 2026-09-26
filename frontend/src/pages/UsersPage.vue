@@ -29,27 +29,27 @@
           </div>
           <form @submit.prevent="saveUser" class="p-6 space-y-4">
             <div v-if="!editing">
-              <label class="label">Username *</label>
-              <input v-model="form.username" class="input" required />
+              <label class="label" for="user-username">Username *</label>
+              <input id="user-username" v-model="form.username" class="input" required />
             </div>
             <div v-if="!editing">
-              <label class="label">Password *</label>
-              <input v-model="form.password" type="password" class="input" required />
+              <label class="label" for="user-password">Password *</label>
+              <input id="user-password" v-model="form.password" type="password" class="input" required />
             </div>
             <div>
-              <label class="label">Email *</label>
-              <input v-model="form.email" type="email" class="input" required />
+              <label class="label" for="user-email">Email *</label>
+              <input id="user-email" v-model="form.email" type="email" class="input" required />
             </div>
             <div>
-              <label class="label">Role</label>
-              <select v-model="form.role" class="input">
+              <label class="label" for="user-role">Role</label>
+              <select id="user-role" v-model="form.role" class="input">
                 <option value="viewer">Viewer</option>
                 <option value="admin">Admin</option>
                 <option value="superadmin">Super Admin</option>
               </select>
             </div>
-            <label v-if="editing" class="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" v-model="form.is_active" class="accent-brand-500" />
+            <label v-if="editing" class="flex items-center gap-2 cursor-pointer" for="user-active">
+              <input id="user-active" type="checkbox" v-model="form.is_active" class="accent-brand-500" />
               <span class="text-sm text-slate-300">Active</span>
             </label>
             <div class="flex gap-3 mt-6">

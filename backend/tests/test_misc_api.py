@@ -358,7 +358,7 @@ class TestApiKeys:
 
     async def test_wrong_jwt_type_returns_401(self, client):
         """A refresh token should not be accepted as an access token."""
-        from jose import jwt as _jwt
+        import jwt as _jwt
         from app.config import get_settings
         import time
         cfg = get_settings()

@@ -5,6 +5,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.session import Base
 
+_DELETE_ORPHAN = "all, delete-orphan"
+
 
 class Monitor(Base):
     __tablename__ = "monitors"
@@ -53,8 +55,8 @@ class Monitor(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     group: Mapped["MonitorGroup | None"] = relationship("MonitorGroup", back_populates="monitors")
-    monitor_users: Mapped[list["MonitorUser"]] = relationship("MonitorUser", back_populates="monitor", cascade="all, delete-orphan")
-    check_results: Mapped[list["CheckResult"]] = relationship("CheckResult", back_populates="monitor", cascade="all, delete-orphan")
-    incidents: Mapped[list["Incident"]] = relationship("Incident", back_populates="monitor", cascade="all, delete-orphan")
-    notification_channels: Mapped[list["MonitorNotificationChannel"]] = relationship("MonitorNotificationChannel", back_populates="monitor", cascade="all, delete-orphan")
-    maintenance_monitors: Mapped[list["MaintenanceWindowMonitor"]] = relationship("MaintenanceWindowMonitor", back_populates="monitor", cascade="all, delete-orphan")
+    monitor_users: Mapped[list["MonitorUser"]] = relationship("MonitorUser", back_populates="monitor", cascade=_DELETE_ORPHAN)
+    check_results: Mapped[list["CheckResult"]] = relationship("CheckResult", back_populates="monitor", cascade=_DELETE_ORPHAN)
+    incidents: Mapped[list["Incident"]] = relationship("Incident", back_populates="monitor", cascade=_DELETE_ORPHAN)
+    notification_channels: Mapped[list["MonitorNotificationChannel"]] = relationship("MonitorNotificationChannel", back_populates="monitor", cascade=_DELETE_ORPHAN)
+    maintenance_monitors: Mapped[list["MaintenanceWindowMonitor"]] = relationship("MaintenanceWindowMonitor", back_populates="monitor", cascade=_DELETE_ORPHAN)

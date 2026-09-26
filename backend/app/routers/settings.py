@@ -6,7 +6,7 @@ Sensitive values (e.g. ``smtp_password_enc``) are masked in GET responses.
 
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -51,7 +51,7 @@ async def update_settings(
     return {"message": "Settings updated"}
 
 
-@router.post("/test-smtp")
+@router.post("/test-smtp", responses={502: {"description": "SMTP test failed"}})
 async def test_smtp(_: User = Depends(require_superadmin), db: AsyncSession = Depends(get_db)):
     """Send a synthetic email notification using the saved SMTP settings."""
     result = await db.execute(select(AppSetting).where(AppSetting.key.in_(["smtp_host", "smtp_port", "smtp_user", "smtp_password_enc", "smtp_from"])))
@@ -70,6 +70,5 @@ async def test_smtp(_: User = Depends(require_superadmin), db: AsyncSession = De
         "recipients": [cfg.get("smtp_from", "")],
     }))
     if not ok:
-        from fastapi import HTTPException
-        raise HTTPException(502, "SMTP test failed — check settings")
+        raise HTTPException(status_code=502, detail="SMTP test failed — check settings")
     return {"message": "SMTP test successful"}

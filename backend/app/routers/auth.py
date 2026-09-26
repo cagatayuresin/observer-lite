@@ -1,9 +1,10 @@
 """Authentication endpoints: login, token refresh, profile, and password change."""
 
 from datetime import UTC, datetime
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from jose import JWTError
+from jwt.exceptions import PyJWTError as JWTError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -42,7 +43,11 @@ async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)):
     )
 
 
-@router.post("/refresh", response_model=TokenResponse)
+@router.post(
+    "/refresh",
+    response_model=TokenResponse,
+    responses={401: {"description": "Invalid refresh token"}},
+)
 async def refresh(body: RefreshRequest, db: AsyncSession = Depends(get_db)):
     try:
         payload = decode_token(body.refresh_token)
@@ -68,11 +73,18 @@ async def me(current_user: User = Depends(get_current_user)):
     return current_user
 
 
-@router.post("/change-password", status_code=204)
+@router.post(
+    "/change-password",
+    status_code=204,
+    responses={
+        400: {"description": "Current password is incorrect"},
+        422: {"description": "Password must be at least 8 characters"},
+    },
+)
 async def change_password(
     body: ChangePasswordRequest,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     if not verify_password(body.current_password, current_user.password_hash):
         raise HTTPException(status_code=400, detail="Current password is incorrect")

@@ -2,15 +2,17 @@
 FROM node:20-alpine AS frontend-builder
 WORKDIR /build/frontend
 COPY frontend/package*.json ./
-RUN npm ci --silent
+RUN npm ci --ignore-scripts --silent
 COPY frontend/ ./
 RUN npm run build
 
 # ── Stage 2: Install Python deps ─────────────────────────────────────────────
 FROM python:3.12-slim AS backend-deps
+COPY --from=ghcr.io/astral-sh/uv:0.12.19 /uv /usr/local/bin/uv
 WORKDIR /build
-COPY backend/pyproject.toml ./
-RUN pip install --no-cache-dir --prefix=/install .
+COPY backend/pyproject.toml backend/uv.lock ./
+RUN uv export --frozen --no-dev --no-emit-project --output-file /tmp/requirements.txt \
+ && uv pip install --python /usr/local/bin/python --prefix=/install --only-binary :all: --require-hashes -r /tmp/requirements.txt
 
 # ── Stage 3: Runtime image ────────────────────────────────────────────────────
 FROM python:3.12-slim

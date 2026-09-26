@@ -19,6 +19,8 @@ from app.utils.crypto import generate_api_key
 
 router = APIRouter(prefix="/api/api-keys", tags=["api-keys"])
 
+_KEY_NOT_FOUND = "API key not found"
+
 
 @router.get("", response_model=list[ApiKeyOut])
 async def list_keys(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
@@ -63,13 +65,20 @@ async def create_key(body: ApiKeyCreate, current_user: User = Depends(get_curren
     )
 
 
-@router.delete("/{key_id}", status_code=204)
+@router.delete(
+    "/{key_id}",
+    status_code=204,
+    responses={
+        404: {"description": _KEY_NOT_FOUND},
+        403: {"description": "Cannot delete another user's API key"},
+    },
+)
 async def delete_key(key_id: int, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     """Delete an API key if the current user owns it or is a superadmin."""
     result = await db.execute(select(ApiKey).where(ApiKey.id == key_id))
     key = result.scalar_one_or_none()
     if not key:
-        raise HTTPException(404, "API key not found")
+        raise HTTPException(status_code=404, detail=_KEY_NOT_FOUND)
     # Non-superadmins must not be able to revoke or enumerate another user's
     # automation credentials by guessing key IDs.
     if key.user_id != current_user.id and current_user.role != "superadmin":

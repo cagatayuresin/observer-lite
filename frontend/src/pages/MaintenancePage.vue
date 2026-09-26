@@ -23,27 +23,29 @@
           <h2 class="text-lg font-semibold text-white mb-4">New Maintenance Window</h2>
           <div class="space-y-4">
             <div>
-              <label class="label">Name</label>
-              <input v-model="form.name" class="input" placeholder="Planned maintenance" />
+              <label class="label" for="maintenance-name">Name</label>
+              <input id="maintenance-name" v-model="form.name" class="input" placeholder="Planned maintenance" />
             </div>
             <div class="space-y-4">
               <div>
-                <label class="label">Start Date & Time</label>
+                <label class="label" for="maintenance-start-date">Start Date & Time</label>
                 <div class="flex gap-2">
-                  <input v-model="form.start_date" type="date" class="input flex-1" />
-                  <input v-model="form.start_time" type="time" class="input w-32" />
+                  <input id="maintenance-start-date" v-model="form.start_date" type="date" class="input flex-1" />
+                  <label class="sr-only" for="maintenance-start-time">Start time</label>
+                  <input id="maintenance-start-time" v-model="form.start_time" type="time" class="input w-32" />
                 </div>
               </div>
               <div>
-                <label class="label">End Date & Time</label>
+                <label class="label" for="maintenance-end-date">End Date & Time</label>
                 <div class="flex gap-2">
-                  <input v-model="form.end_date" type="date" class="input flex-1" />
-                  <input v-model="form.end_time" type="time" class="input w-32" />
+                  <input id="maintenance-end-date" v-model="form.end_date" type="date" class="input flex-1" />
+                  <label class="sr-only" for="maintenance-end-time">End time</label>
+                  <input id="maintenance-end-time" v-model="form.end_time" type="time" class="input w-32" />
                 </div>
               </div>
             </div>
-            <label class="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" v-model="form.suppress_alerts" class="accent-brand-500" />
+            <label class="flex items-center gap-2 cursor-pointer" for="maintenance-suppress">
+              <input id="maintenance-suppress" type="checkbox" v-model="form.suppress_alerts" class="accent-brand-500" />
               <span class="text-sm text-slate-300">Suppress alerts during window</span>
             </label>
           </div>
@@ -85,7 +87,7 @@ async function saveWindow() {
   const startsAt = new Date(`${form.value.start_date}T${form.value.start_time}:00`)
   const endsAt = new Date(`${form.value.end_date}T${form.value.end_time}:00`)
   
-  if (isNaN(startsAt.getTime()) || isNaN(endsAt.getTime())) {
+  if (Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime())) {
     toast.error('Geçersiz tarih formatı')
     return
   }
@@ -106,7 +108,8 @@ async function saveWindow() {
     toast.success('Maintenance window created')
     showForm.value = false
     await load()
-  } catch (e: any) {
+  } catch {
+    // The create call failed; show one message and keep the form open.
     toast.error('Oluşturulamadı')
   }
 }

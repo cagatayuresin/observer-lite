@@ -17,12 +17,12 @@
       <div class="card p-6">
         <form @submit.prevent="handleLogin">
           <div class="mb-4">
-            <label class="label">Username</label>
-            <input v-model="form.username" type="text" class="input" placeholder="admin" autocomplete="username" required />
+            <label class="label" for="login-username">Username</label>
+            <input id="login-username" v-model="form.username" type="text" class="input" placeholder="admin" autocomplete="username" required />
           </div>
           <div class="mb-6">
-            <label class="label">Password</label>
-            <input v-model="form.password" type="password" class="input" placeholder="••••••••" autocomplete="current-password" required />
+            <label class="label" for="login-password">Password</label>
+            <input id="login-password" v-model="form.password" type="password" class="input" placeholder="••••••••" autocomplete="current-password" required />
           </div>
           <button type="submit" class="btn-primary w-full justify-center" :disabled="loading">
             <span v-if="loading">Signing in…</span>

@@ -184,8 +184,9 @@ class TestMaintenanceDirect:
         from app.routers.maintenance import update_window
         from app.schemas.maintenance import MaintenanceUpdate
         from fastapi import HTTPException
+        body = MaintenanceUpdate(name="X")
         with pytest.raises(HTTPException) as exc_info:
-            await update_window(99999, MaintenanceUpdate(name="X"), admin_user, db)
+            await update_window(99999, body, admin_user, db)
         assert exc_info.value.status_code == 404
 
     async def test_delete_window(self, db, admin_user):

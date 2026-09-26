@@ -1,7 +1,7 @@
 """Unit tests for auth_service: password hashing and JWT operations."""
 
 import pytest
-from jose import JWTError
+from jwt.exceptions import PyJWTError as JWTError
 
 from app.services.auth_service import (
     create_access_token,
@@ -26,7 +26,9 @@ class TestPasswordHashing:
 
     def test_different_hashes_same_password(self):
         pw = "same"
-        assert hash_password(pw) != hash_password(pw)  # different salts
+        first = hash_password(pw)
+        second = hash_password(pw)
+        assert first != second
 
 
 class TestJWT:

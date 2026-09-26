@@ -25,7 +25,9 @@ def _check_ssl_sync(hostname: str, port: int = 443) -> tuple[bool, int | None, s
         *days_until_expiry* is ``None`` if the expiry date could not be
         parsed.  *error_message* is ``None`` on success.
     """
-    ctx = ssl.create_default_context()
+    ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    ctx.minimum_version = ssl.TLSVersion.TLSv1_2
+    ctx.load_default_certs()
     try:
         with (
             socket.create_connection((hostname, port), timeout=10) as sock,

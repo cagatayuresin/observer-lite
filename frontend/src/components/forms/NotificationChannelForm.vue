@@ -1,8 +1,9 @@
 <template>
   <div class="space-y-4">
     <div>
-      <label class="label">Name</label>
+      <label class="label" for="channel-name">Name</label>
       <input
+        id="channel-name"
         :value="modelValue.name"
         class="input"
         :placeholder="modelValue.type === 'telegram' ? 'My Telegram Channel' : 'My Email Channel'"
@@ -12,8 +13,8 @@
     </div>
 
     <div>
-      <label class="label">Type</label>
-      <select :value="modelValue.type" class="input" @change="updateType(selectValue($event))">
+      <label class="label" for="channel-type">Type</label>
+      <select id="channel-type" :value="modelValue.type" class="input" @change="updateType(selectValue($event))">
         <option value="email">Email</option>
         <option value="telegram">Telegram</option>
       </select>
@@ -23,8 +24,9 @@
     <template v-if="modelValue.type === 'email'">
       <div class="grid grid-cols-2 gap-3">
         <div>
-          <label class="label">SMTP Host</label>
+          <label class="label" for="channel-smtp-host">SMTP Host</label>
           <input
+            id="channel-smtp-host"
             :value="modelValue.config.smtp_host"
             class="input"
             placeholder="smtp.gmail.com"
@@ -32,8 +34,9 @@
           />
         </div>
         <div>
-          <label class="label">SMTP Port</label>
+          <label class="label" for="channel-smtp-port">SMTP Port</label>
           <input
+            id="channel-smtp-port"
             :value="modelValue.config.smtp_port"
             type="number"
             class="input"
@@ -44,12 +47,13 @@
       </div>
       <div class="grid grid-cols-2 gap-3">
         <div>
-          <label class="label">Username</label>
-          <input :value="modelValue.config.smtp_user" class="input" @input="updateConfig('smtp_user', inputValue($event))" />
+          <label class="label" for="channel-smtp-user">Username</label>
+          <input id="channel-smtp-user" :value="modelValue.config.smtp_user" class="input" @input="updateConfig('smtp_user', inputValue($event))" />
         </div>
         <div>
-          <label class="label">Password</label>
+          <label class="label" for="channel-smtp-password">Password</label>
           <input
+            id="channel-smtp-password"
             :value="modelValue.config.smtp_password_enc"
             type="password"
             class="input"
@@ -58,8 +62,9 @@
         </div>
       </div>
       <div>
-        <label class="label">From Address</label>
+        <label class="label" for="channel-smtp-from">From Address</label>
         <input
+          id="channel-smtp-from"
           :value="modelValue.config.smtp_from"
           class="input"
           placeholder="alerts@example.com"
@@ -67,8 +72,9 @@
         />
       </div>
       <div>
-        <label class="label">Recipients (comma-separated)</label>
+        <label class="label" for="channel-recipients">Recipients (comma-separated)</label>
         <input
+          id="channel-recipients"
           :value="modelValue.config.recipients_str"
           class="input"
           placeholder="ops@example.com, dev@example.com"
@@ -85,8 +91,9 @@
     <!-- Telegram config -->
     <template v-else>
       <div>
-        <label class="label">Bot Token</label>
+        <label class="label" for="channel-bot-token">Bot Token</label>
         <input
+          id="channel-bot-token"
           :value="modelValue.config.bot_token"
           class="input"
           placeholder="123456:ABC-DEF..."
@@ -94,8 +101,9 @@
         />
       </div>
       <div>
-        <label class="label">Chat ID</label>
+        <label class="label" for="channel-chat-id">Chat ID</label>
         <input
+          id="channel-chat-id"
           :value="modelValue.config.chat_id"
           class="input"
           placeholder="-1001234567890"

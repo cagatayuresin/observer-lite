@@ -18,6 +18,8 @@ from app.dependencies import get_current_user, require_admin
 
 router = APIRouter(prefix="/api/groups", tags=["groups"])
 
+_GROUP_NOT_FOUND = "Group not found"
+
 
 class GroupCreate(BaseModel):
     """Payload used when creating or replacing a monitor group."""
@@ -54,13 +56,13 @@ async def create_group(body: GroupCreate, current_user: User = Depends(require_a
     return group
 
 
-@router.put("/{group_id}", response_model=GroupOut)
+@router.put("/{group_id}", response_model=GroupOut, responses={404: {"description": _GROUP_NOT_FOUND}})
 async def update_group(group_id: int, body: GroupCreate, _: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
     """Replace the name and description for an existing group."""
     result = await db.execute(select(MonitorGroup).where(MonitorGroup.id == group_id))
     group = result.scalar_one_or_none()
     if not group:
-        raise HTTPException(404, "Group not found")
+        raise HTTPException(status_code=404, detail=_GROUP_NOT_FOUND)
     group.name = body.name
     group.description = body.description
     await db.commit()
@@ -68,12 +70,12 @@ async def update_group(group_id: int, body: GroupCreate, _: User = Depends(requi
     return group
 
 
-@router.delete("/{group_id}", status_code=204)
+@router.delete("/{group_id}", status_code=204, responses={404: {"description": _GROUP_NOT_FOUND}})
 async def delete_group(group_id: int, _: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
     """Delete a group without deleting the monitors assigned to it."""
     result = await db.execute(select(MonitorGroup).where(MonitorGroup.id == group_id))
     group = result.scalar_one_or_none()
     if not group:
-        raise HTTPException(404, "Group not found")
+        raise HTTPException(status_code=404, detail=_GROUP_NOT_FOUND)
     await db.delete(group)
     await db.commit()

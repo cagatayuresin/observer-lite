@@ -16,6 +16,8 @@ from app.db.session import AsyncSessionLocal
 
 router = APIRouter(prefix="/api/heartbeat", tags=["heartbeat"])
 
+_UNKNOWN_TOKEN = "Unknown heartbeat token"
+
 
 async def _handle_heartbeat(token: str):
     """Record a heartbeat ping for the monitor that owns *token*.
@@ -30,7 +32,7 @@ async def _handle_heartbeat(token: str):
         result = await db.execute(select(Monitor).where(Monitor.heartbeat_token == token))
         monitor = result.scalar_one_or_none()
         if not monitor:
-            raise HTTPException(404, "Unknown heartbeat token")
+            return None
         # A heartbeat is an explicit "I am alive" signal, so it resets the
         # live status immediately instead of waiting for the next scheduler run.
         monitor.heartbeat_last_ping = datetime.now(UTC)
@@ -42,13 +44,19 @@ async def _handle_heartbeat(token: str):
         return {"message": "ok", "monitor": monitor.name}
 
 
-@router.get("/{token}")
+@router.get("/{token}", responses={404: {"description": _UNKNOWN_TOKEN}})
 async def heartbeat_get(token: str):
     """Accept a heartbeat ping sent as an HTTP GET request."""
-    return await _handle_heartbeat(token)
+    result = await _handle_heartbeat(token)
+    if result is None:
+        raise HTTPException(status_code=404, detail=_UNKNOWN_TOKEN)
+    return result
 
 
-@router.post("/{token}")
+@router.post("/{token}", responses={404: {"description": _UNKNOWN_TOKEN}})
 async def heartbeat_post(token: str):
     """Accept a heartbeat ping sent as an HTTP POST request."""
-    return await _handle_heartbeat(token)
+    result = await _handle_heartbeat(token)
+    if result is None:
+        raise HTTPException(status_code=404, detail=_UNKNOWN_TOKEN)
+    return result

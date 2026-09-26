@@ -24,8 +24,8 @@
           <h2 class="text-lg font-semibold text-white mb-4">New API Key</h2>
           <div class="space-y-4">
             <div>
-              <label class="label">Name</label>
-              <input v-model="newName" class="input" placeholder="CI/CD pipeline" />
+              <label class="label" for="api-key-name">Name</label>
+              <input id="api-key-name" v-model="newName" class="input" placeholder="CI/CD pipeline" />
             </div>
           </div>
           <div class="flex gap-3 mt-6">

@@ -13,6 +13,8 @@ from app.schemas.incident import IncidentOut
 
 router = APIRouter(prefix="/api/incidents", tags=["incidents"])
 
+_INCIDENT_NOT_FOUND = "Incident not found"
+
 
 @router.get("", response_model=list[IncidentOut])
 async def list_incidents(
@@ -31,21 +33,21 @@ async def list_incidents(
     return result.scalars().all()
 
 
-@router.get("/{incident_id}", response_model=IncidentOut)
+@router.get("/{incident_id}", response_model=IncidentOut, responses={404: {"description": _INCIDENT_NOT_FOUND}})
 async def get_incident(incident_id: int, _: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Incident).where(Incident.id == incident_id))
     inc = result.scalar_one_or_none()
     if not inc:
-        raise HTTPException(404, "Incident not found")
+        raise HTTPException(status_code=404, detail=_INCIDENT_NOT_FOUND)
     return inc
 
 
-@router.post("/{incident_id}/acknowledge", status_code=204)
+@router.post("/{incident_id}/acknowledge", status_code=204, responses={404: {"description": _INCIDENT_NOT_FOUND}})
 async def acknowledge(incident_id: int, current_user: User = Depends(require_admin), db: AsyncSession = Depends(get_db)):
     result2 = await db.execute(select(Incident).where(Incident.id == incident_id))
     inc = result2.scalar_one_or_none()
     if not inc:
-        raise HTTPException(404, "Incident not found")
+        raise HTTPException(status_code=404, detail=_INCIDENT_NOT_FOUND)
     inc.acknowledged_by = current_user.id
     inc.acknowledged_at = datetime.now(UTC)
     await db.commit()

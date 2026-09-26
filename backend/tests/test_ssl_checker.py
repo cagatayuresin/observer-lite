@@ -24,7 +24,7 @@ class TestCheckSslSync:
         mock_ctx.wrap_socket.return_value.__exit__ = MagicMock(return_value=False)
 
         with (
-            patch("app.checkers.ssl_checker.ssl.create_default_context", return_value=mock_ctx),
+            patch("app.checkers.ssl_checker.ssl.SSLContext", return_value=mock_ctx),
             patch("app.checkers.ssl_checker.socket.create_connection") as mock_conn,
         ):
             mock_conn.return_value.__enter__ = lambda s: mock_sock
@@ -47,7 +47,7 @@ class TestCheckSslSync:
         mock_ctx.wrap_socket.return_value.__exit__ = MagicMock(return_value=False)
 
         with (
-            patch("app.checkers.ssl_checker.ssl.create_default_context", return_value=mock_ctx),
+            patch("app.checkers.ssl_checker.ssl.SSLContext", return_value=mock_ctx),
             patch("app.checkers.ssl_checker.socket.create_connection") as mock_conn,
         ):
             mock_conn.return_value.__enter__ = lambda s: mock_sock
@@ -67,7 +67,7 @@ class TestCheckSslSync:
 
         mock_sock = MagicMock()
         with (
-            patch("app.checkers.ssl_checker.ssl.create_default_context", return_value=mock_ctx),
+            patch("app.checkers.ssl_checker.ssl.SSLContext", return_value=mock_ctx),
             patch("app.checkers.ssl_checker.socket.create_connection") as mock_conn,
         ):
             mock_conn.return_value.__enter__ = lambda s: mock_sock

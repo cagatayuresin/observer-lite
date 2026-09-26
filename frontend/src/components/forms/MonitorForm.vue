@@ -6,17 +6,17 @@
         <h2 class="text-lg font-bold text-white mb-4 border-b border-surface-700 pb-2">Basic Settings</h2>
         <div class="space-y-4">
           <div>
-            <label class="label">Monitor Name *</label>
-            <input v-model="form.name" class="input" placeholder="My API" required />
+            <label class="label" for="monitor-name">Monitor Name *</label>
+            <input id="monitor-name" v-model="form.name" class="input" placeholder="My API" required />
           </div>
           <div>
-            <label class="label">URL / Host *</label>
-            <input v-model="form.url" class="input" placeholder="https://example.com/api/health" required />
+            <label class="label" for="monitor-url">URL / Host *</label>
+            <input id="monitor-url" v-model="form.url" class="input" placeholder="https://example.com/api/health" required />
           </div>
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="label">Type</label>
-              <select v-model="form.monitor_type" class="input">
+              <label class="label" for="monitor-type">Type</label>
+              <select id="monitor-type" v-model="form.monitor_type" class="input">
                 <option value="http_get">HTTP GET</option>
                 <option value="http_post">HTTP POST</option>
                 <option value="http_head">HTTP HEAD</option>
@@ -25,8 +25,8 @@
               </select>
             </div>
             <div>
-              <label class="label">Check Interval</label>
-              <select v-model.number="form.check_interval_seconds" class="input">
+              <label class="label" for="monitor-interval">Check Interval</label>
+              <select id="monitor-interval" v-model.number="form.check_interval_seconds" class="input">
                 <option :value="30">30 seconds</option>
                 <option :value="60">1 minute</option>
                 <option :value="120">2 minutes</option>
@@ -39,17 +39,17 @@
           </div>
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="label">Timeout (seconds)</label>
-              <input v-model.number="form.timeout_seconds" type="number" min="1" max="60" class="input" />
+              <label class="label" for="monitor-timeout">Timeout (seconds)</label>
+              <input id="monitor-timeout" v-model.number="form.timeout_seconds" type="number" min="1" max="60" class="input" />
             </div>
             <div>
               <div class="flex items-center justify-between">
-                <label class="label mb-0">Group</label>
+                <label class="label mb-0" for="monitor-group">Group</label>
                 <button type="button" @click="$emit('request-new-group')" class="text-xs text-brand-400 hover:text-brand-300 font-medium">
                   + New Group
                 </button>
               </div>
-              <select v-model="form.group_id" class="input mt-1">
+              <select id="monitor-group" v-model="form.group_id" class="input mt-1">
                 <option :value="null">— No group —</option>
                 <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.name }}</option>
               </select>
@@ -67,22 +67,22 @@
         <h2 class="text-lg font-bold text-white mb-4 border-b border-surface-700 pb-2">Request & Assertions</h2>
         <div class="space-y-4">
           <div>
-            <label class="label">Expected Status Codes</label>
-            <input v-model="form.expected_status_codes" class="input font-mono" placeholder="2xx or 200|404 or !5xx" />
+            <label class="label" for="monitor-expected-status">Expected Status Codes</label>
+            <input id="monitor-expected-status" v-model="form.expected_status_codes" class="input font-mono" placeholder="2xx or 200|404 or !5xx" />
             <p class="text-xs text-slate-600 mt-1">Supports: <code>2xx</code>, <code>200</code>, <code>!5xx</code>, <code>200|404</code></p>
           </div>
           <div v-if="form.monitor_type !== 'ping' && form.monitor_type !== 'heartbeat'">
-            <label class="label">Request Headers (JSON)</label>
-            <textarea v-model="form.request_headers" class="input font-mono text-xs h-20" placeholder='{"Authorization": "Bearer token"}' />
+            <label class="label" for="monitor-request-headers">Request Headers (JSON)</label>
+            <textarea id="monitor-request-headers" v-model="form.request_headers" class="input font-mono text-xs h-20" placeholder='{"Authorization": "Bearer token"}' />
           </div>
           <div v-if="form.monitor_type === 'http_post'">
-            <label class="label">Request Body</label>
-            <textarea v-model="form.request_body" class="input font-mono text-xs h-24" placeholder='{"key": "value"}' />
+            <label class="label" for="monitor-request-body">Request Body</label>
+            <textarea id="monitor-request-body" v-model="form.request_body" class="input font-mono text-xs h-24" placeholder='{"key": "value"}' />
           </div>
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="label">Response Body Match</label>
-              <select v-model="form.expected_body_type" class="input">
+              <label class="label" for="monitor-body-match">Response Body Match</label>
+              <select id="monitor-body-match" v-model="form.expected_body_type" class="input">
                 <option :value="null">— None —</option>
                 <option value="contains">Contains</option>
                 <option value="equals">Equals</option>
@@ -90,8 +90,8 @@
               </select>
             </div>
             <div v-if="form.expected_body_type">
-              <label class="label">Match Value</label>
-              <input v-model="form.expected_body_value" class="input" placeholder="expected string" />
+              <label class="label" for="monitor-match-value">Match Value</label>
+              <input id="monitor-match-value" v-model="form.expected_body_value" class="input" placeholder="expected string" />
             </div>
           </div>
         </div>
@@ -103,23 +103,23 @@
         <div class="space-y-4">
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="label">Retries before DOWN</label>
-              <input v-model.number="form.retry_count" type="number" min="1" max="10" class="input" />
+              <label class="label" for="monitor-retry-count">Retries before DOWN</label>
+              <input id="monitor-retry-count" v-model.number="form.retry_count" type="number" min="1" max="10" class="input" />
               <p class="text-xs text-slate-600 mt-1">Consecutive failures before alert</p>
             </div>
             <div>
-              <label class="label">Retry interval (seconds)</label>
-              <input v-model.number="form.retry_interval_seconds" type="number" min="5" class="input" />
+              <label class="label" for="monitor-retry-interval">Retry interval (seconds)</label>
+              <input id="monitor-retry-interval" v-model.number="form.retry_interval_seconds" type="number" min="5" class="input" />
             </div>
           </div>
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="label">Response time warning (ms)</label>
-              <input v-model.number="form.response_time_warning_ms" type="number" min="100" class="input" />
+              <label class="label" for="monitor-response-warning">Response time warning (ms)</label>
+              <input id="monitor-response-warning" v-model.number="form.response_time_warning_ms" type="number" min="100" class="input" />
             </div>
             <div>
-              <label class="label">Alert cooldown (seconds)</label>
-              <input v-model.number="form.alert_cooldown_seconds" type="number" min="60" class="input" />
+              <label class="label" for="monitor-alert-cooldown">Alert cooldown (seconds)</label>
+              <input id="monitor-alert-cooldown" v-model.number="form.alert_cooldown_seconds" type="number" min="60" class="input" />
             </div>
           </div>
         </div>
@@ -131,12 +131,12 @@
         <div class="space-y-4">
           <ToggleSwitch v-model="form.ssl_check_enabled" label="Enable SSL certificate monitoring" />
           <div v-if="form.ssl_check_enabled">
-            <label class="label">Expiry warning (days before)</label>
-            <input v-model.number="form.ssl_expiry_warning_days" type="number" min="1" max="90" class="input w-32" />
+            <label class="label" for="monitor-ssl-warning-days">Expiry warning (days before)</label>
+            <input id="monitor-ssl-warning-days" v-model.number="form.ssl_expiry_warning_days" type="number" min="1" max="90" class="input w-32" />
           </div>
           <div v-if="form.monitor_type === 'heartbeat'" class="mt-4">
-            <label class="label">Heartbeat Grace Period (seconds)</label>
-            <input v-model.number="form.heartbeat_grace_seconds" type="number" min="10" class="input w-32" />
+            <label class="label" for="monitor-heartbeat-grace">Heartbeat Grace Period (seconds)</label>
+            <input id="monitor-heartbeat-grace" v-model.number="form.heartbeat_grace_seconds" type="number" min="10" class="input w-32" />
             <p v-if="isEdit && monitorData?.heartbeat_token" class="text-xs text-slate-500 mt-2">
               Heartbeat URL: <code class="text-brand-400 break-all">/api/heartbeat/{{ monitorData.heartbeat_token }}</code>
             </p>
@@ -201,15 +201,15 @@ const emit = defineEmits<{
 }>()
 
 // Two-way binding: reflect parent changes into local proxy without infinite loops
-const form = ref<FormModel>(JSON.parse(JSON.stringify(props.modelValue)))
+const form = ref<FormModel>(structuredClone(props.modelValue))
 
 watch(() => props.modelValue, (v) => {
   if (JSON.stringify(v) !== JSON.stringify(form.value)) {
-    form.value = JSON.parse(JSON.stringify(v))
+    form.value = structuredClone(v)
   }
 }, { deep: true })
 
 watch(form, (v) => {
-  emit('update:modelValue', JSON.parse(JSON.stringify(v)))
+  emit('update:modelValue', structuredClone(v))
 }, { deep: true })
 </script>

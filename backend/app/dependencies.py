@@ -12,7 +12,7 @@ from datetime import UTC
 
 from fastapi import Depends, HTTPException, Security, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jose import JWTError
+from jwt.exceptions import PyJWTError as JWTError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -102,7 +102,7 @@ def require_role(*roles: str):
         returns the authenticated user if their role is allowed, otherwise
         raises a 403 error.
     """
-    async def _check(current_user: User = Depends(get_current_user)) -> User:
+    def _check(current_user: User = Depends(get_current_user)) -> User:
         if current_user.role not in roles:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
         return current_user

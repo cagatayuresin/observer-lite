@@ -6,16 +6,16 @@
         <p class="text-slate-400 text-sm mb-6">You must set a new password before continuing.</p>
         <form @submit.prevent="handleSubmit">
           <div class="mb-4">
-            <label class="label">Current Password</label>
-            <input v-model="form.current" type="password" class="input" required />
+            <label class="label" for="current-password">Current Password</label>
+            <input id="current-password" v-model="form.current" type="password" class="input" required />
           </div>
           <div class="mb-4">
-            <label class="label">New Password</label>
-            <input v-model="form.next" type="password" class="input" minlength="8" required />
+            <label class="label" for="new-password">New Password</label>
+            <input id="new-password" v-model="form.next" type="password" class="input" minlength="8" required />
           </div>
           <div class="mb-6">
-            <label class="label">Confirm New Password</label>
-            <input v-model="form.confirm" type="password" class="input" required />
+            <label class="label" for="confirm-password">Confirm New Password</label>
+            <input id="confirm-password" v-model="form.confirm" type="password" class="input" required />
           </div>
           <p v-if="error" class="text-red-400 text-sm mb-4">{{ error }}</p>
           <button type="submit" class="btn-primary w-full justify-center" :disabled="loading">
