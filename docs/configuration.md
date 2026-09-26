@@ -107,13 +107,13 @@ Release tags are published only when pushing a matching `v*` Git tag. Those rele
 
 | Tag | Meaning |
 | --- | --- |
-| `0.2.1` | Exact version from `VERSION`. |
-| `v0.2.1` | Git-style version tag. |
+| `0.2.2` | Exact version from `VERSION`. |
+| `v0.2.2` | Git-style version tag. |
 | `0.2` | Major/minor convenience tag. |
 
 When creating a release tag, make it match `VERSION`:
 
 ```bash
-git tag v0.2.1
-git push origin v0.2.1
+git tag v0.2.2
+git push origin v0.2.2
 ```

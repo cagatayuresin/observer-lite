@@ -46,11 +46,13 @@ Observer Lite uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
-## [0.2.1] — 2026-09-26
+## [0.2.2] — 2026-09-27
 
 ### Security
 - Scope monitor list and detail reads so viewers only see monitors they created or are assigned to. Unassigned monitors return not found.
 - Omit `heartbeat_token` from monitor responses unless the caller is an admin or the monitor creator. Reported by zeroninetoo.
+- Serve built frontend files from a fixed map so a request path cannot leave the static directory.
+- Replace `python-jose` with PyJWT and raise locked dependencies past the open Dependabot advisories.
 
 ## [0.2.0] — 2026-05-06
 ### Added
@@ -64,7 +66,7 @@ Observer Lite uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 Initial release. See [Unreleased] for the full feature list — all items above ship in 0.1.0.
 
-[Unreleased]: https://github.com/cagatayuresin/observer-lite/compare/v0.2.1...HEAD
-[0.2.1]: https://github.com/cagatayuresin/observer-lite/compare/v0.2.0...v0.2.1
+[Unreleased]: https://github.com/cagatayuresin/observer-lite/compare/v0.2.2...HEAD
+[0.2.2]: https://github.com/cagatayuresin/observer-lite/compare/v0.2.0...v0.2.2
 [0.2.0]: https://github.com/cagatayuresin/observer-lite/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/cagatayuresin/observer-lite/releases/tag/v0.1.0
