@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 import secrets
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import Monitor, MonitorUser, MonitorNotificationChannel, User
@@ -22,6 +22,36 @@ def _now() -> datetime:
     return datetime.now(timezone.utc)
 
 
+def _is_privileged(user: User) -> bool:
+    return user.role in {"admin", "superadmin"}
+
+
+def _can_see_heartbeat_token(user: User, monitor: Monitor) -> bool:
+    """Token is a shared secret. Only admins and the creating user may read it."""
+    return _is_privileged(user) or monitor.created_by == user.id
+
+
+async def _user_can_view_monitor(db: AsyncSession, user: User, monitor: Monitor) -> bool:
+    """Admins see every monitor. Other users see ones they created or are assigned to."""
+    if _is_privileged(user) or monitor.created_by == user.id:
+        return True
+    result = await db.execute(
+        select(MonitorUser.monitor_id).where(
+            MonitorUser.monitor_id == monitor.id,
+            MonitorUser.user_id == user.id,
+        )
+    )
+    return result.scalar_one_or_none() is not None
+
+
+def _monitor_out(monitor: Monitor, user: User) -> MonitorOut:
+    """Serialize a monitor without persisting redaction back onto the ORM row."""
+    out = MonitorOut.model_validate(monitor)
+    if not _can_see_heartbeat_token(user, monitor):
+        return out.model_copy(update={"heartbeat_token": None})
+    return out
+
+
 @router.get("", response_model=list[MonitorOut])
 async def list_monitors(
     status_filter: str | None = Query(None, alias="status"),
@@ -31,6 +61,9 @@ async def list_monitors(
     db: AsyncSession = Depends(get_db),
 ):
     q = select(Monitor)
+    if not _is_privileged(current_user):
+        assigned_ids = select(MonitorUser.monitor_id).where(MonitorUser.user_id == current_user.id)
+        q = q.where(or_(Monitor.created_by == current_user.id, Monitor.id.in_(assigned_ids)))
     if status_filter:
         q = q.where(Monitor.current_status == status_filter)
     if group_id:
@@ -39,7 +72,7 @@ async def list_monitors(
         q = q.where(Monitor.name.ilike(f"%{search}%"))
     q = q.order_by(Monitor.name)
     result = await db.execute(q)
-    return result.scalars().all()
+    return [_monitor_out(monitor, current_user) for monitor in result.scalars().all()]
 
 
 @router.post("", response_model=MonitorOut, status_code=201)
@@ -63,12 +96,12 @@ async def create_monitor(
 
 
 @router.get("/{monitor_id}", response_model=MonitorOut)
-async def get_monitor(monitor_id: int, _: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def get_monitor(monitor_id: int, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Monitor).where(Monitor.id == monitor_id))
     monitor = result.scalar_one_or_none()
-    if not monitor:
+    if not monitor or not await _user_can_view_monitor(db, current_user, monitor):
         raise HTTPException(status_code=404, detail="Monitor not found")
-    return monitor
+    return _monitor_out(monitor, current_user)
 
 
 @router.put("/{monitor_id}", response_model=MonitorOut)

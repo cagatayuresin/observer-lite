@@ -205,3 +205,74 @@ class TestMonitorStats:
         resp = await client.get(f"/api/incidents?monitor_id={created['id']}", headers=headers)
         assert resp.status_code == 200
         assert isinstance(resp.json(), list)
+
+
+async def _viewer_headers(client, admin_headers, username="viewer-scope"):
+    create_resp = await client.post("/api/users", json={
+        "username": username,
+        "email": f"{username}@example.com",
+        "password": "viewpass123",
+        "role": "viewer",
+    }, headers=admin_headers)
+    assert create_resp.status_code == 201, create_resp.text
+    login = await client.post("/api/auth/login", json={"username": username, "password": "viewpass123"})
+    assert login.status_code == 200, login.text
+    return {"Authorization": f"Bearer {login.json()['access_token']}"}, create_resp.json()["id"]
+
+
+class TestViewerMonitorScope:
+    async def test_viewer_cannot_list_or_read_unassigned_monitor(self, client):
+        admin_headers = await _auth_headers(client)
+        created = (await _create_monitor(
+            client, admin_headers, name="victim-heartbeat", monitor_type="heartbeat", url="heartbeat://victim",
+        )).json()
+        token = created["heartbeat_token"]
+        assert token
+
+        viewer_headers, _viewer_id = await _viewer_headers(client, admin_headers)
+
+        listed = await client.get("/api/monitors", headers=viewer_headers)
+        assert listed.status_code == 200
+        assert listed.json() == []
+        assert token not in listed.text
+
+        detail = await client.get(f"/api/monitors/{created['id']}", headers=viewer_headers)
+        assert detail.status_code == 404
+        assert token not in detail.text
+
+    async def test_assigned_viewer_sees_monitor_without_heartbeat_token(self, client):
+        admin_headers = await _auth_headers(client)
+        created = (await _create_monitor(
+            client, admin_headers, name="assigned-heartbeat", monitor_type="heartbeat", url="heartbeat://assigned",
+        )).json()
+        token = created["heartbeat_token"]
+        viewer_headers, viewer_id = await _viewer_headers(client, admin_headers, username="viewer-assigned")
+
+        assign = await client.post(
+            f"/api/monitors/{created['id']}/users",
+            params={"user_id": viewer_id, "notify": True},
+            headers=admin_headers,
+        )
+        assert assign.status_code == 201, assign.text
+
+        listed = await client.get("/api/monitors", headers=viewer_headers)
+        assert listed.status_code == 200
+        body = listed.json()
+        assert len(body) == 1
+        assert body[0]["id"] == created["id"]
+        assert body[0]["heartbeat_token"] is None
+        assert token not in listed.text
+
+        detail = await client.get(f"/api/monitors/{created['id']}", headers=viewer_headers)
+        assert detail.status_code == 200
+        assert detail.json()["heartbeat_token"] is None
+        assert token not in detail.text
+
+    async def test_admin_still_receives_heartbeat_token(self, client):
+        admin_headers = await _auth_headers(client)
+        created = (await _create_monitor(
+            client, admin_headers, name="admin-heartbeat", monitor_type="heartbeat", url="heartbeat://admin",
+        )).json()
+        detail = await client.get(f"/api/monitors/{created['id']}", headers=admin_headers)
+        assert detail.status_code == 200
+        assert detail.json()["heartbeat_token"] == created["heartbeat_token"]
