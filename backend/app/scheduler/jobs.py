@@ -22,6 +22,7 @@ from app.db.session import AsyncSessionLocal
 from app.services.check_service import process_result
 from app.services.notification_service import notify_ssl_warning
 from app.services.retention_service import run_retention_cleanup
+from app.utils.time import ensure_utc
 
 logger = logging.getLogger(__name__)
 
@@ -85,6 +86,8 @@ async def _perform_check(monitor: Monitor) -> CheckResult:
 async def _check_heartbeat(db, monitor: Monitor) -> None:
     now = datetime.now(UTC)
     last_ping = monitor.heartbeat_last_ping
+    if last_ping is not None:
+        last_ping = ensure_utc(last_ping)
     grace = monitor.heartbeat_grace_seconds
     interval = monitor.check_interval_seconds
 

@@ -27,6 +27,7 @@ from app.db.models import CheckResult as DBCheckResult
 from app.db.models import Incident, Monitor
 from app.services.notification_service import notify_down, notify_recovery
 from app.sse.broadcaster import broadcaster
+from app.utils.time import ensure_utc
 
 logger = logging.getLogger(__name__)
 
@@ -132,7 +133,7 @@ async def _record_recovery(
         return
     now = datetime.now(UTC)
     open_incident.resolved_at = now
-    open_incident.duration_seconds = int((now - open_incident.started_at).total_seconds())
+    open_incident.duration_seconds = int((now - ensure_utc(open_incident.started_at)).total_seconds())
     await db.flush()
     if not monitor.alerts_enabled or open_incident.recovery_sent:
         return

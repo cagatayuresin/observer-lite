@@ -70,7 +70,7 @@ def _read_app_version() -> str:
         version_file = parent / "VERSION"
         if version_file.exists():
             return version_file.read_text(encoding="utf-8").strip()
-    return "0.2.2"
+    return "0.2.3"
 
 
 async def _seed_initial_data():

@@ -46,6 +46,11 @@ Observer Lite uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.2.3] — 2026-09-27
+
+### Fixed
+- Treat timestamps read from SQLite as UTC so a heartbeat monitor can be marked down after the grace period, and incident duration is recorded when a monitor recovers.
+
 ## [0.2.2] — 2026-09-27
 
 ### Security
@@ -66,7 +71,8 @@ Observer Lite uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 Initial release. See [Unreleased] for the full feature list — all items above ship in 0.1.0.
 
-[Unreleased]: https://github.com/cagatayuresin/observer-lite/compare/v0.2.2...HEAD
+[Unreleased]: https://github.com/cagatayuresin/observer-lite/compare/v0.2.3...HEAD
+[0.2.3]: https://github.com/cagatayuresin/observer-lite/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/cagatayuresin/observer-lite/compare/v0.2.0...v0.2.2
 [0.2.0]: https://github.com/cagatayuresin/observer-lite/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/cagatayuresin/observer-lite/releases/tag/v0.1.0

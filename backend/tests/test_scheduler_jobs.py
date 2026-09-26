@@ -379,6 +379,46 @@ class TestCheckHeartbeat:
             result = mock_pr.call_args.args[2]
             assert result.status == "up"
 
+    async def test_naive_sqlite_ping_does_not_crash(self):
+        from app.scheduler.jobs import _check_heartbeat
+
+        # SQLite returns DateTime values without a timezone.
+        recent = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(seconds=30)
+        monitor = MagicMock()
+        monitor.heartbeat_last_ping = recent
+        monitor.heartbeat_grace_seconds = 60
+        monitor.check_interval_seconds = 300
+
+        mock_db = MagicMock()
+        with patch("app.scheduler.jobs.process_result", new_callable=AsyncMock) as mock_pr:
+            await _check_heartbeat(mock_db, monitor)
+            result = mock_pr.call_args.args[2]
+            assert result.status == "up"
+
+    async def test_heartbeat_reloaded_from_sqlite_stays_up(self):
+        engine = await _make_engine()
+        factory = async_sessionmaker(engine, expire_on_commit=False)
+        mid = await _make_monitor(
+            factory,
+            monitor_type="heartbeat",
+            url="heartbeat://app",
+            heartbeat_token="tok-abc",
+            heartbeat_grace_seconds=60,
+            check_interval_seconds=60,
+            heartbeat_last_ping=datetime.now(timezone.utc) - timedelta(seconds=30),
+        )
+
+        with (
+            patch("app.scheduler.jobs.AsyncSessionLocal", factory),
+            patch("app.scheduler.jobs.process_result", new_callable=AsyncMock) as mock_pr,
+        ):
+            from app.scheduler.jobs import run_monitor_check
+            await run_monitor_check(mid)
+            result = mock_pr.call_args.args[2]
+            assert result.status == "up"
+
+        await engine.dispose()
+
 
 # ---------------------------------------------------------------------------
 # _in_maintenance

@@ -83,6 +83,26 @@ class TestIncidentStateMachine:
         assert inc.duration_seconds is not None
         assert inc.duration_seconds >= 0
 
+    async def test_recovery_accepts_naive_started_at(self, db, admin_user):
+        monitor = _make_monitor(db, admin_user.id, retry_count=1, consecutive_failures=1)
+        db.add(monitor)
+        await db.flush()
+
+        started = datetime.now(timezone.utc).replace(tzinfo=None)
+        inc = Incident(monitor_id=monitor.id, started_at=started, root_cause="down")
+        db.add(inc)
+        await db.flush()
+
+        result = CheckResult(status="up")
+        with patch("app.services.check_service.broadcaster") as mock_broadcaster:
+            mock_broadcaster.publish = lambda *a, **kw: None
+            await process_result(db, monitor, result)
+
+        await db.refresh(inc)
+        assert inc.resolved_at is not None
+        assert inc.duration_seconds is not None
+        assert inc.duration_seconds >= 0
+
     async def test_consecutive_failures_reset_on_recovery(self, db, admin_user):
         monitor = _make_monitor(db, admin_user.id, consecutive_failures=5)
         db.add(monitor)
