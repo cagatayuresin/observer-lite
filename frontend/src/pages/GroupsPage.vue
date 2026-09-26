@@ -32,16 +32,16 @@
         <div class="p-4 overflow-y-auto">
           <form id="group-form" @submit.prevent="saveGroup" class="space-y-4">
             <div>
-              <label class="label">Name *</label>
-              <input v-model="form.name" class="input" placeholder="Production" required />
+              <label class="label" for="group-name">Name *</label>
+              <input id="group-name" v-model="form.name" class="input" placeholder="Production" required />
             </div>
             <div>
-              <label class="label">Description</label>
-              <input v-model="form.description" class="input" placeholder="Critical services" />
+              <label class="label" for="group-description">Description</label>
+              <input id="group-description" v-model="form.description" class="input" placeholder="Critical services" />
             </div>
             
             <div v-if="allMonitors.length">
-              <label class="label">Assign Monitors</label>
+              <p class="label">Assign Monitors</p>
               <div class="space-y-1.5 max-h-48 overflow-y-auto p-2 bg-surface-900 border border-surface-700 rounded-lg">
                 <label v-for="m in allMonitors" :key="m.id" class="flex items-center gap-2 p-1.5 hover:bg-surface-800 rounded cursor-pointer">
                   <input type="checkbox" :value="m.id" v-model="selectedMonitorIds" class="accent-brand-500 rounded bg-surface-700 border-surface-600 text-brand-500 focus:ring-brand-500/50" />

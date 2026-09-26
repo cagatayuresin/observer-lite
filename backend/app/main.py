@@ -184,15 +184,30 @@ app.include_router(audit_log.router)
 app.include_router(sse.router)
 app.include_router(import_export.router)
 
+
+def _index_static_files(root: Path) -> dict[str, Path]:
+    """Map URL paths to files that already live under *root*.
+
+    The request path is only used as a dictionary key. It is never joined onto
+    the filesystem, so a ``../`` segment cannot escape the static directory.
+    """
+    return {
+        path.relative_to(root).as_posix(): path
+        for path in root.rglob("*")
+        if path.is_file()
+    }
+
+
 # Static files (built frontend)
-_static_dir = Path(__file__).parent.parent / "static"
-if _static_dir.exists():
-    app.mount("/assets", StaticFiles(directory=str(_static_dir / "assets")), name="assets")
+_static_dir = (Path(__file__).parent.parent / "static").resolve()
+_static_files = _index_static_files(_static_dir) if _static_dir.is_dir() else {}
+_index_file = _static_files.get("index.html")
+if _index_file is not None:
+    _assets_dir = _static_dir / "assets"
+    if _assets_dir.is_dir():
+        app.mount("/assets", StaticFiles(directory=str(_assets_dir)), name="assets")
 
     @app.get("/{full_path:path}", include_in_schema=False)
     async def spa_fallback(full_path: str):
-        # Serve static files that exist, otherwise fall back to index.html
-        file_path = _static_dir / full_path
-        if file_path.exists() and file_path.is_file():
-            return FileResponse(str(file_path))
-        return FileResponse(str(_static_dir / "index.html"))
+        # Unknown paths serve the SPA shell so Vue Router can handle them.
+        return FileResponse(_static_files.get(full_path, _index_file))

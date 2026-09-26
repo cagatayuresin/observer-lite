@@ -30,7 +30,7 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)):
+async def login(body: LoginRequest, db: Annotated[AsyncSession, Depends(get_db)]):
     result = await db.execute(select(User).where(User.username == body.username))
     user = result.scalar_one_or_none()
     if user is None or not verify_password(body.password, user.password_hash):
@@ -48,7 +48,7 @@ async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)):
     response_model=TokenResponse,
     responses={401: {"description": "Invalid refresh token"}},
 )
-async def refresh(body: RefreshRequest, db: AsyncSession = Depends(get_db)):
+async def refresh(body: RefreshRequest, db: Annotated[AsyncSession, Depends(get_db)]):
     try:
         payload = decode_token(body.refresh_token)
         if payload.get("type") != "refresh":
@@ -69,7 +69,7 @@ async def refresh(body: RefreshRequest, db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/me", response_model=UserMe)
-async def me(current_user: User = Depends(get_current_user)):
+async def me(current_user: Annotated[User, Depends(get_current_user)]):
     return current_user
 
 

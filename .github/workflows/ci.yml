@@ -1,5 +1,8 @@
 name: CI
 
+permissions:
+  contents: read
+
 on:
   push:
     branches: [main]
@@ -33,19 +36,19 @@ jobs:
           python-version: "3.12"
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
         with:
           enable-cache: true
 
       - name: Install dependencies
-        run: uv sync --frozen --extra dev
+        run: uv sync --frozen --extra dev --no-build --no-install-project
 
       - name: Lint (ruff)
-        run: uv run ruff check app/
+        run: .venv/bin/ruff check app/
 
       - name: Test with coverage
         run: |
-          uv run pytest tests/ \
+          .venv/bin/pytest tests/ \
             --cov=app \
             --cov-report=term-missing \
             --cov-fail-under=80 \

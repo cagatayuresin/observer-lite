@@ -1,12 +1,5 @@
 <template>
-  <div
-    class="card px-4 py-3 flex items-center gap-4 hover:border-surface-600 transition-colors cursor-pointer"
-    role="link"
-    tabindex="0"
-    @click="openMonitor"
-    @keydown.enter="openMonitor"
-    @keydown.space.prevent="openMonitor"
-  >
+  <div class="card px-4 py-3 flex items-center gap-4 hover:border-surface-600 transition-colors">
     <!-- Checkbox -->
     <label :for="selectId" class="sr-only">Select {{ monitor.name }}</label>
     <input
@@ -21,12 +14,10 @@
     <StatusBadge :status="monitor.current_status" />
 
     <!-- Name & URL -->
-    <div class="flex-1 min-w-0">
+    <RouterLink :to="`/monitors/${monitor.id}`" class="flex-1 min-w-0">
       <p class="text-sm font-medium text-white truncate">{{ monitor.name }}</p>
       <p class="text-xs text-slate-500 truncate">{{ monitor.url }}</p>
-    </div>
-
-    <!-- Response time -->
+    </RouterLink>
     <div class="text-right hidden sm:block w-20 shrink-0">
       <p class="text-sm font-medium" :class="rtColor">
         {{ monitor.last_response_time_ms != null ? `${monitor.last_response_time_ms}ms` : '—' }}
@@ -51,7 +42,7 @@
     </div>
 
     <!-- Actions -->
-    <div class="flex gap-1 shrink-0" @click.stop @keydown.stop>
+    <div class="flex gap-1 shrink-0">
       <button
         v-if="auth.isAdmin && monitor.is_enabled"
         @click="emit('pause')"
@@ -91,7 +82,7 @@
 
 <script setup lang="ts">
 import { computed, ref, onMounted } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { RouterLink } from 'vue-router'
 import type { Monitor } from '@/stores/monitors'
 import { useAuthStore } from '@/stores/auth'
 import { monitorsApi } from '@/api/monitors'
@@ -101,14 +92,9 @@ import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 const props = defineProps<{ monitor: Monitor; selected: boolean }>()
 const emit = defineEmits<{ 'toggle-select': []; pause: []; resume: []; delete: [] }>()
 const auth = useAuthStore()
-const router = useRouter()
 const confirmDelete = ref(false)
 const history = ref<{ id: number; status: string }[]>([])
 const selectId = computed(() => `select-monitor-${props.monitor.id}`)
-
-function openMonitor() {
-  router.push(`/monitors/${props.monitor.id}`)
-}
 
 onMounted(async () => {
   if (props.monitor.current_status !== 'pending') {

@@ -80,7 +80,7 @@ def generate_api_key() -> tuple[str, str, str]:
         the first 10 characters used for display purposes.
     """
     raw = "obs_" + os.urandom(28).hex()
-    key_hash = hashlib.sha256(raw.encode()).hexdigest()
+    key_hash = hash_api_key(raw)
     key_prefix = raw[:10]
     return raw, key_hash, key_prefix
 
@@ -97,4 +97,5 @@ def hash_api_key(raw: str) -> str:
     Returns:
         64-character lowercase hex string.
     """
-    return hashlib.sha256(raw.encode()).hexdigest()
+    # API keys are 224-bit random values. SHA-256 identifies them; it is not a password hash.
+    return hashlib.sha256(raw.encode(), usedforsecurity=False).hexdigest()  # codeql[py/weak-sensitive-data-hashing]

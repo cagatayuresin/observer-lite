@@ -26,12 +26,12 @@
           </div>
           <form @submit.prevent="handleCreateGroup" class="p-6 space-y-4">
             <div>
-              <label class="label">Group Name *</label>
-              <input v-model="newGroupForm.name" class="input" required placeholder="e.g. Production" />
+              <label class="label" for="inline-group-name">Group Name *</label>
+              <input id="inline-group-name" v-model="newGroupForm.name" class="input" required placeholder="e.g. Production" />
             </div>
             <div>
-              <label class="label">Description</label>
-              <input v-model="newGroupForm.description" class="input" placeholder="Optional" />
+              <label class="label" for="inline-group-description">Description</label>
+              <input id="inline-group-description" v-model="newGroupForm.description" class="input" placeholder="Optional" />
             </div>
             <div class="flex gap-3 mt-6">
               <button type="submit" class="btn-primary flex-1" :disabled="savingGroup">Create</button>
