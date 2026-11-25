@@ -30,7 +30,6 @@ docker run -d \
   -v observer_data:/data \
   -e SECRET_KEY="$(openssl rand -hex 32)" \
   -e DATABASE_PATH="/data/observer.db" \
-  -e DATABASE_URL="sqlite+aiosqlite:////data/observer.db" \
   ghcr.io/cagatayuresin/observer-lite:latest
 ```
 
@@ -63,7 +62,6 @@ services:
       PORT: "3000"
       SECRET_KEY: "replace-with-a-long-random-secret"
       DATABASE_PATH: "/data/observer.db"
-      DATABASE_URL: "sqlite+aiosqlite:////data/observer.db"
 
 volumes:
   observer_data:

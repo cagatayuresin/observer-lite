@@ -5,79 +5,39 @@ permalink: /development/
 
 # Development
 
-Observer Lite has a FastAPI backend and a Vue 3 frontend.
+Observer Lite is one Rust binary and a Vue 3 frontend. The binary embeds the built frontend, so a machine that only runs the image does not need Node or Python.
 
 ## Repository Layout
 
 ```text
 observer-lite/
-├── backend/
-│   ├── app/
-│   │   ├── checkers/
-│   │   ├── db/
-│   │   ├── routers/
-│   │   ├── scheduler/
-│   │   ├── services/
-│   │   └── sse/
-│   └── tests/
-├── frontend/
-│   └── src/
+├── crates/observer/   # Axum server, checkers, scheduler, tests
+├── frontend/src/      # Vue 3 UI
 ├── docs/
 ├── Dockerfile
 └── docker-compose.yml
 ```
 
-## Backend Setup
-
-```bash
-cd backend
-uv venv
-uv pip install -e ".[dev]"
-alembic upgrade head
-uvicorn app.main:app --reload --workers 1
-```
-
-The backend runs on:
-
-```text
-http://localhost:8000
-```
-
-## Frontend Setup
-
-In another terminal:
+## Local setup
 
 ```bash
 cd frontend
-npm install
-npm run dev
+npm ci
+npm run build
+cd ..
+SECRET_KEY=dev-secret DATABASE_PATH=./observer.db cargo run
 ```
 
-The Vite dev server prints its local URL.
+The server listens on `http://localhost:3000`. For UI work, `npm run dev` in `frontend/` proxies `/api` to that port.
 
 ## Tests
 
-Backend:
-
 ```bash
-cd backend
-DEBUG=false uv run pytest tests/ --cov=app --cov-report=term-missing --cov-fail-under=80
+cargo test --workspace
+cd frontend && npm test && npm run type-check
 ```
 
-Frontend:
-
-```bash
-cd frontend
-npm run type-check
-npm run build
-```
-
-Lint:
-
-```bash
-cd backend
-uv run ruff check app tests
-```
+`./scripts/analyze.sh` runs formatting, Clippy, tests, coverage, and dependency checks without pushing anything.
 
 ## Documentation Site Locally
 
@@ -100,37 +60,16 @@ http://localhost:4000
 
 Do not commit generated `_site/` output.
 
-## Adding Backend Endpoints
+## Adding API behavior
 
-Preferred flow:
+1. Add the route in `crates/observer/src/routes`.
+2. Keep shared check, notification, and retention logic in `crates/observer/src/services`.
+3. Add a test in `crates/observer/tests` or next to the module.
+4. Update the docs when the behavior is user-visible.
 
-1. Add or update a schema in `backend/app/schemas`.
-2. Add router behavior in `backend/app/routers`.
-3. Put business logic in `backend/app/services` when it is shared or stateful.
-4. Add tests in `backend/tests`.
-5. Update docs when the behavior is user-visible.
+## Adding monitor logic
 
-## Adding Monitor Logic
-
-Checkers live in:
-
-```text
-backend/app/checkers/
-```
-
-Scheduler orchestration lives in:
-
-```text
-backend/app/scheduler/jobs.py
-```
-
-Result processing and incident state changes live in:
-
-```text
-backend/app/services/check_service.py
-```
-
-Keep checker functions focused on producing a `CheckResult`. Persisting results and opening incidents should stay in the service layer.
+Probes live in `crates/observer/src/checkers`. The scheduler in `crates/observer/src/scheduler.rs` only reads the `monitors` table. Persisting a result and opening an incident stays in `crates/observer/src/services/checks.rs`. A checker returns a result; it does not write the database.
 
 ## Documentation Style
 

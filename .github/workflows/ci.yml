@@ -19,63 +19,131 @@ on:
       - "sample-monitors.pdf"
       - ".github/workflows/pages.yml"
 
-jobs:
-  # ── Backend ──────────────────────────────────────────────────────────────────
-  backend:
-    name: Backend — lint & test
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend
+env:
+  CARGO_TERM_COLOR: always
 
+jobs:
+  rust:
+    name: Rust — fmt, clippy, test, dependencies
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          python-version: "3.12"
+          components: rustfmt, clippy
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
-        with:
-          enable-cache: true
+      - uses: Swatinem/rust-cache@v2
 
-      - name: Install dependencies
-        run: uv sync --frozen --extra dev --no-build --no-install-project
+      - name: Format
+        run: cargo fmt --all -- --check
 
-      - name: Lint (ruff)
-        run: .venv/bin/ruff check app/
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
 
-      - name: Test with coverage
-        run: |
-          .venv/bin/pytest tests/ \
-            --cov=app \
-            --cov-report=term-missing \
-            --cov-fail-under=80 \
-            -q
+      - name: Test
+        run: cargo test --workspace
 
-  # ── Frontend ─────────────────────────────────────────────────────────────────
+      - name: Coverage
+        uses: taiki-e/install-action@cargo-llvm-cov
+
+      - name: Enforce line coverage
+        run: cargo llvm-cov --workspace --fail-under-lines 80
+
+      - name: Dependency audit
+        uses: taiki-e/install-action@cargo-audit
+
+      - name: Audit
+        run: cargo audit
+
+      - name: Dependency policy
+        uses: taiki-e/install-action@cargo-deny
+
+      - name: Deny
+        run: cargo deny check
+
   frontend:
-    name: Frontend — type-check & build
+    name: Frontend — test, types, build, audit
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: frontend
-
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Install dependencies
+      - name: Install
         run: npm ci --ignore-scripts
+
+      - name: Test
+        run: npm test
 
       - name: Type check
         run: npm run type-check
 
       - name: Build
         run: npm run build
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+
+  sonar:
+    name: SonarQube Cloud
+    runs-on: ubuntu-latest
+    needs: [rust]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - uses: taiki-e/install-action@cargo-llvm-cov
+
+      - name: Clippy report
+        run: cargo clippy --workspace --message-format=json -- -D warnings > clippy.json || true
+
+      - name: Coverage report
+        run: cargo llvm-cov --workspace --lcov --output-path lcov.info
+
+      - name: Upload to SonarQube Cloud
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          if [ -z "${SONAR_TOKEN}" ]; then
+            echo "SONAR_TOKEN is not configured. Clippy and coverage reports were produced; cloud upload skipped."
+            exit 0
+          fi
+          curl -sSLo /tmp/sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-7.1.0.4889-linux-x64.zip
+          unzip -q /tmp/sonar-scanner.zip -d /tmp
+          /tmp/sonar-scanner-*/bin/sonar-scanner
+
+  image:
+    name: Docker image health (no registry push)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build --build-arg APP_VERSION="$(tr -d '[:space:]' < VERSION)" -t observer-lite:ci .
+
+      - name: Boot and check health
+        run: |
+          docker run -d --name observer-ci -p 3000:3000 \
+            -e SECRET_KEY=ci-secret-key-not-for-production \
+            observer-lite:ci
+          for _ in 1 2 3 4 5 6 7 8 9 10; do
+            if curl -fsS http://127.0.0.1:3000/api/health; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs observer-ci
+          exit 1

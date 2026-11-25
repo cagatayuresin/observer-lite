@@ -1,0 +1,61 @@
+[package]
+name = "observer"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+publish.workspace = true
+description = "Lightweight self-hosted uptime monitoring."
+
+[[bin]]
+name = "observer-lite"
+path = "src/main.rs"
+
+[lib]
+name = "observer"
+path = "src/lib.rs"
+
+[dependencies]
+aes = "0.8"
+axum = { version = "0.8", features = ["json", "tokio"] }
+base64 = "0.22"
+bcrypt = "0.17"
+bytes = "1"
+cbc = "0.1"
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+cipher = "0.4"
+hex = "0.4"
+hmac = "0.12"
+jsonwebtoken = "9"
+lettre = { version = "0.11", default-features = false, features = ["tokio1-rustls-tls", "smtp-transport", "builder", "hostname"] }
+mime_guess = "2"
+pbkdf2 = { version = "0.12", default-features = false, features = ["hmac"] }
+rand = "0.8"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+rust-embed = "8"
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+socket2 = { version = "0.5", features = ["all"] }
+sqlx = { version = "0.9", default-features = false, features = ["runtime-tokio", "sqlite", "derive"] }
+subtle = "2"
+thiserror = "2"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "net", "time", "signal", "process", "io-util", "sync"] }
+tokio-rustls = "0.26"
+tokio-stream = "0.1"
+tower = "0.5"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+url = "2"
+webpki-roots = "1"
+x509-parser = "0.16"
+
+# Forces the SQLite C library to be compiled in, so the binary does not need libsqlite3.
+libsqlite3-sys = { version = "0.40", features = ["bundled"] }
+
+[dev-dependencies]
+http-body-util = "0.1"
+tempfile = "3"
+tower = { version = "0.5", features = ["util"] }
+rcgen = "0.13"

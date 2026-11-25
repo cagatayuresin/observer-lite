@@ -1,31 +1,56 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
+export type ToastType = 'success' | 'error' | 'warning' | 'info'
+
 export interface Toast {
   id: number
-  type: 'success' | 'error' | 'info'
+  type: ToastType
+  title: string
   message: string
+  timeout: number
 }
 
-let _id = 0
+const DEFAULT_TIMEOUT: Record<ToastType, number> = {
+  success: 4000,
+  info: 5000,
+  warning: 7000,
+  error: 9000,
+}
+
+const DEFAULT_TITLE: Record<ToastType, string> = {
+  success: 'Saved',
+  info: 'Notice',
+  warning: 'Check this',
+  error: 'Something failed',
+}
+
+let nextId = 0
 
 export const useToastStore = defineStore('toast', () => {
   const toasts = ref<Toast[]>([])
 
-  function add(message: string, type: Toast['type'] = 'info') {
-    const id = ++_id
-    toasts.value.push({ id, type, message })
-    setTimeout(() => remove(id), 4000)
+  function push(type: ToastType, message: string, title?: string, timeout?: number) {
+    const id = ++nextId
+    toasts.value.push({
+      id,
+      type,
+      title: title || DEFAULT_TITLE[type],
+      message,
+      timeout: timeout ?? DEFAULT_TIMEOUT[type],
+    })
+    return id
   }
 
   function remove(id: number) {
-    const idx = toasts.value.findIndex((t) => t.id === id)
-    if (idx !== -1) toasts.value.splice(idx, 1)
+    const index = toasts.value.findIndex((toast) => toast.id === id)
+    if (index !== -1) toasts.value.splice(index, 1)
   }
 
-  const success = (msg: string) => add(msg, 'success')
-  const error = (msg: string) => add(msg, 'error')
-  const info = (msg: string) => add(msg, 'info')
+  const success = (message: string, title?: string) => push('success', message, title)
+  const error = (message: string, title?: string) => push('error', message, title)
+  const warning = (message: string, title?: string) => push('warning', message, title)
+  const info = (message: string, title?: string) => push('info', message, title)
 
-  return { toasts, success, error, info, remove }
+  return { toasts, push, remove, success, error, warning, info }
 })

@@ -1,4 +1,6 @@
 import axios from 'axios'
+import { formatApiError } from './errors'
+import { useToastStore } from '@/stores/toast'
 
 export const api = axios.create({
   baseURL: '/api',
@@ -34,6 +36,14 @@ api.interceptors.response.use(
         }
       } else {
         window.location.href = '/login'
+      }
+    }
+    const silent = Boolean((original as { toast?: boolean } | undefined)?.toast === false)
+    if (!silent && error.response?.status !== 401) {
+      try {
+        useToastStore().error(formatApiError(error))
+      } catch {
+        // Pinia is not active during isolated unit tests.
       }
     }
     throw error
