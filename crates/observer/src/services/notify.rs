@@ -203,7 +203,7 @@ pub async fn send_email(state: &AppState, config: &str, subject: &str, html: &st
         recipients: &recipients,
         subject,
         html,
-        implicit_tls: use_tls,
+        use_tls,
     })
     .await
     {
@@ -224,7 +224,7 @@ struct SmtpMail<'a> {
     recipients: &'a [String],
     subject: &'a str,
     html: &'a str,
-    implicit_tls: bool,
+    use_tls: bool,
 }
 
 async fn deliver_smtp(mail: SmtpMail<'_>) -> Result<(), String> {
@@ -237,7 +237,7 @@ async fn deliver_smtp(mail: SmtpMail<'_>) -> Result<(), String> {
         recipients,
         subject,
         html,
-        implicit_tls,
+        use_tls,
     } = mail;
     use lettre::message::{header::ContentType, Mailbox, Message};
     use lettre::transport::smtp::authentication::Credentials;
@@ -257,13 +257,14 @@ async fn deliver_smtp(mail: SmtpMail<'_>) -> Result<(), String> {
         .body(html.to_string())
         .map_err(|err| err.to_string())?;
     let tls = TlsParameters::new(host.to_string()).map_err(|err| err.to_string())?;
+    let tls = match smtp_security(port, use_tls) {
+        SmtpSecurity::Implicit => Tls::Wrapper(tls),
+        SmtpSecurity::StartTls => Tls::Required(tls),
+        SmtpSecurity::Plain => Tls::None,
+    };
     let mut transport = AsyncSmtpTransport::<Tokio1Executor>::builder_dangerous(host)
         .port(port)
-        .tls(if implicit_tls {
-            Tls::Wrapper(tls)
-        } else {
-            Tls::Required(tls)
-        });
+        .tls(tls);
     if !user.is_empty() {
         transport = transport.credentials(Credentials::new(user.to_string(), password.to_string()));
     }
@@ -317,6 +318,29 @@ fn text(value: &Value, key: &str) -> String {
         .unwrap_or("")
         .trim()
         .to_string()
+}
+
+#[derive(Debug, PartialEq, Eq)]
+enum SmtpSecurity {
+    Implicit,
+    StartTls,
+    Plain,
+}
+
+/// Port 465 speaks TLS from the first byte. Port 587 speaks STARTTLS, including
+/// when an older config stored `use_tls: false` to reach that mode.
+fn smtp_security(port: u16, use_tls: bool) -> SmtpSecurity {
+    if port == 465 {
+        if use_tls {
+            SmtpSecurity::Implicit
+        } else {
+            SmtpSecurity::Plain
+        }
+    } else if port == 587 || use_tls {
+        SmtpSecurity::StartTls
+    } else {
+        SmtpSecurity::Plain
+    }
 }
 
 fn string_list(value: &Value, key: &str) -> Vec<String> {
@@ -398,6 +422,16 @@ pub fn restore_masked_secrets(previous: &str, incoming: &mut Value) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn submission_port_uses_starttls() {
+        assert_eq!(smtp_security(587, true), SmtpSecurity::StartTls);
+        assert_eq!(smtp_security(587, false), SmtpSecurity::StartTls);
+        assert_eq!(smtp_security(465, true), SmtpSecurity::Implicit);
+        assert_eq!(smtp_security(465, false), SmtpSecurity::Plain);
+        assert_eq!(smtp_security(25, false), SmtpSecurity::Plain);
+        assert_eq!(smtp_security(2525, true), SmtpSecurity::StartTls);
+    }
 
     #[test]
     fn duration_buckets() {

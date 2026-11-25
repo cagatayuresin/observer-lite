@@ -83,9 +83,10 @@
       </div>
       <ToggleSwitch
         :model-value="!!modelValue.config.use_tls"
-        label="Use TLS"
+        label="Encrypt connection"
         @update:model-value="updateConfig('use_tls', $event)"
       />
+      <p class="text-xs text-mist">Port 587 uses STARTTLS. Port 465 uses TLS from the start.</p>
     </template>
 
     <!-- Telegram config -->
