@@ -1,55 +1,10 @@
-# ── Git & IDE ──────────────────────────────────────────────────────────────────
-.git
-.gitignore
-.gitattributes
-.github
-.claude
-.vscode
-.idea
-
-# ── Documentation (not needed in image) ───────────────────────────────────────
-*.md
-LICENSE
-SECURITY.md
-CONTRIBUTING.md
-CHANGELOG.md
-
-# ── Python ────────────────────────────────────────────────────────────────────
-backend/.venv
-backend/__pycache__
-backend/**/__pycache__
-backend/**/*.pyc
-backend/**/*.pyo
-backend/**/*.pyd
-backend/.pytest_cache
-backend/.coverage
-backend/htmlcov
-backend/.mypy_cache
-backend/.ruff_cache
-backend/dist
-backend/*.egg-info
-
-# ── Node / Frontend ───────────────────────────────────────────────────────────
+target
 frontend/node_modules
-frontend/dist          # built by the Dockerfile itself
-frontend/.cache
-frontend/.turbo
-
-# ── Test artefacts ────────────────────────────────────────────────────────────
-backend/tests
-backend/pytest.ini
-
-# ── Local data & secrets ──────────────────────────────────────────────────────
+frontend/dist
+!frontend/dist/index.html
+docs/.jekyll-cache
+docs/_site
 *.db
-*.db-wal
-*.db-shm
-data/
-.env
-.env.*
-!.env.example
-
-# ── Misc ──────────────────────────────────────────────────────────────────────
-*.log
-*.tmp
-.DS_Store
-Thumbs.db
+lcov.info
+clippy.json
+coverage

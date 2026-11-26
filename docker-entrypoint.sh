@@ -1,22 +1,18 @@
 #!/bin/sh
 set -e
 
-# Ensure data directory
-mkdir -p "$(dirname "$DATABASE_PATH")"
-
 if [ -z "${SECRET_KEY:-}" ]; then
     echo "[observer-lite] SECRET_KEY is required. Set it to a long random value." >&2
     exit 1
 fi
 
-# Run database migrations
-echo "[observer-lite] Running migrations…"
-alembic upgrade head
+data_dir=$(dirname "${DATABASE_PATH:-/data/observer.db}")
+mkdir -p "$data_dir"
 
-# Start server
-echo "[observer-lite] Starting on port ${PORT:-3000}…"
-exec uvicorn app.main:app \
-    --host 0.0.0.0 \
-    --port "${PORT:-3000}" \
-    --workers 1 \
-    --log-level info
+echo "[observer-lite] Starting on port ${PORT:-3000}"
+if [ "$(id -u)" = "0" ]; then
+    chown observer:observer "$data_dir"
+    exec su-exec observer /usr/local/bin/observer-lite
+fi
+
+exec /usr/local/bin/observer-lite

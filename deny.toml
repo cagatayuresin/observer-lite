@@ -1,0 +1,35 @@
+[advisories]
+unmaintained = "workspace"
+yanked = "warn"
+ignore = [
+    { id = "RUSTSEC-2026-0543", reason = "chrono 0.4 has no published replacement; timestamps stay on it for this release" },
+]
+
+[licenses]
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "0BSD",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Zlib",
+    "Unicode-3.0",
+    "Unicode-DFS-2016",
+    "MPL-2.0",
+    "CDLA-Permissive-2.0",
+    "OpenSSL",
+    "CC0-1.0",
+    "BSL-1.0",
+]
+confidence-threshold = 0.8
+
+[bans]
+multiple-versions = "warn"
+wildcards = "allow"
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]

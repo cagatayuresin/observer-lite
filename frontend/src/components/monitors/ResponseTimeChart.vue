@@ -26,8 +26,8 @@ function build() {
       {},
       {
         label: 'Response (ms)',
-        stroke: '#3b82f6',
-        fill: 'rgba(59,130,246,0.1)',
+        stroke: '#F47321',
+        fill: 'rgba(244,115,33,0.15)',
         width: 1.5,
       },
     ],

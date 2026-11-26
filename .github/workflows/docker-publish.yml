@@ -1,10 +1,7 @@
 name: Docker — Build & Push to GHCR
 
+# Registry publish is manual or tag-driven. A green CI run does not push an image.
 on:
-  workflow_run:
-    workflows: ["CI"]
-    branches: [main]
-    types: [completed]
   push:
     tags: ["v*"]
   workflow_dispatch:
@@ -17,15 +14,7 @@ jobs:
   build-and-push:
     name: Build & push Docker image
     runs-on: ubuntu-latest
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      github.event_name == 'push' ||
-      (
-        github.event.workflow_run.conclusion == 'success' &&
-        github.event.workflow_run.event == 'push' &&
-        github.event.workflow_run.head_branch == 'main' &&
-        github.event.workflow_run.head_repository.full_name == github.repository
-      )
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
 
     permissions:
       contents: read
@@ -50,8 +39,13 @@ jobs:
           fi
 
           base_version="${version%%-*}"
+          prerelease=false
+          if [[ "$version" == *-* ]]; then
+            prerelease=true
+          fi
           echo "version=${version}" >> "$GITHUB_OUTPUT"
           echo "major_minor=${base_version%.*}" >> "$GITHUB_OUTPUT"
+          echo "prerelease=${prerelease}" >> "$GITHUB_OUTPUT"
 
       - name: Normalize image name
         id: image
@@ -77,8 +71,8 @@ jobs:
             type=ref,event=branch
             type=raw,value=${{ steps.version.outputs.version }},enable=${{ github.ref_type == 'tag' }}
             type=raw,value=v${{ steps.version.outputs.version }},enable=${{ github.ref_type == 'tag' }}
-            type=raw,value=${{ steps.version.outputs.major_minor }},enable=${{ github.ref_type == 'tag' }}
-            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=${{ steps.version.outputs.major_minor }},enable=${{ github.ref_type == 'tag' && steps.version.outputs.prerelease == 'false' }}
+            type=raw,value=latest,enable=${{ github.ref_type == 'tag' && steps.version.outputs.prerelease == 'false' }}
           labels: |
             org.opencontainers.image.version=${{ steps.version.outputs.version }}
 

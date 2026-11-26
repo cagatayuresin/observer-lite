@@ -1,6 +1,6 @@
 # Contributing to Observer Lite
 
-Thank you for taking the time to contribute! Observer Lite is a self-hosted uptime monitoring tool built with Python/FastAPI and Vue 3. Contributions of all kinds are welcome — bug fixes, new features, documentation improvements, and test coverage.
+Thank you for taking the time to contribute! Observer Lite is a self-hosted uptime monitoring tool built with Rust and Vue 3. Contributions of all kinds are welcome — bug fixes, new features, documentation improvements, and test coverage.
 
 ## Table of Contents
 
@@ -32,40 +32,24 @@ Thank you for taking the time to contribute! Observer Lite is a self-hosted upti
 
 ## Development Setup
 
-### Backend (Python 3.12+)
+### Server (Rust)
 
 ```bash
-cd backend
-
-# Create a virtual environment (uv is recommended, pip works too)
-python3.12 -m venv .venv
-source .venv/bin/activate
-
-# Install dependencies in editable mode
-pip install -e ".[dev]"
-
-# Apply database migrations
-DATABASE_URL="sqlite+aiosqlite:////tmp/observer_dev.db" \
-DATABASE_PATH="/tmp/observer_dev.db" \
-alembic upgrade head
-
-# Start the backend
-DATABASE_URL="sqlite+aiosqlite:////tmp/observer_dev.db" \
-DATABASE_PATH="/tmp/observer_dev.db" \
+cd frontend && npm ci && npm run build && cd ..
 SECRET_KEY="dev-secret-do-not-use-in-prod" \
-PORT=8080 \
-uvicorn app.main:app --host 127.0.0.1 --port 8080 --reload --workers 1
+DATABASE_PATH="./observer.db" \
+cargo run
 ```
 
-> **`--workers 1` is required.** APScheduler and the SSE broadcaster are in-process; multiple workers cause duplicate checks and missed events.
+The process listens on port 3000. Run one process per data directory. The scheduler lives in that process.
 
-### Frontend (Node 20+)
+### Frontend (Node 22+)
 
 ```bash
 cd frontend
-npm install
+npm ci
 npm run dev   # Vite dev server at http://localhost:5173
-              # API proxied to http://localhost:8080
+              # API proxied to http://localhost:3000
 ```
 
 Open **http://localhost:5173** in your browser. Default credentials: `admin` / `admin`. You will be prompted to change the password on first login.
@@ -76,18 +60,11 @@ Open **http://localhost:5173** in your browser. Default credentials: `admin` / `
 
 ```
 observer-lite/
-├── backend/
-│   ├── app/
-│   │   ├── checkers/      # Monitor type implementations (HTTP, Ping, SSL, Heartbeat)
-│   │   ├── db/            # SQLAlchemy models and async session factory
-│   │   ├── routers/       # FastAPI routers (one per resource)
-│   │   ├── schemas/       # Pydantic v2 request/response schemas
-│   │   ├── services/      # Business logic (check processing, notifications, stats)
-│   │   ├── scheduler/     # APScheduler engine, job manager, and job functions
-│   │   ├── sse/           # Server-Sent Events broadcaster
-│   │   └── utils/         # Crypto helpers, pagination
-│   ├── alembic/           # Database migrations
-│   └── tests/             # pytest test suite
+├── crates/observer/
+│   ├── src/checkers/      # HTTP, ping, SSL, heartbeat
+│   ├── src/routes/        # HTTP API
+│   ├── src/services/      # Check processing, notifications, retention
+│   └── tests/             # API tests
 └── frontend/
     └── src/
         ├── api/           # Axios API clients
@@ -101,18 +78,11 @@ observer-lite/
 
 ## Coding Standards
 
-### Python
+### Rust
 
-- **Style:** Follow [PEP 8](https://peps.python.org/pep-0008/). We use `ruff` for linting and formatting.
-  ```bash
-  cd backend
-  ruff check app/
-  ruff format app/
-  ```
-- **Type hints:** All public functions must have full type annotations.
-- **Docstrings:** Use [Google-style docstrings](https://google.github.io/styleguide/pyguide.html#383-functions-and-methods) for all public modules, classes, and functions.
-- **Async:** All DB operations and external I/O must be `async`. Never call blocking code on the event loop without `asyncio.to_thread`.
-- **Security:** Never log request bodies, passwords, or tokens. Validate all user-controlled input with Pydantic.
+- Format with `cargo fmt` and keep `cargo clippy --workspace --all-targets -- -D warnings` clean.
+- Do not log passwords, tokens, or request bodies.
+- Blocking work (bcrypt, ICMP) goes through `spawn_blocking`.
 
 ### TypeScript / Vue
 
@@ -131,13 +101,8 @@ observer-lite/
 ## Running Tests
 
 ```bash
-cd backend
-
-# Run the full test suite with coverage
-.venv/bin/python -m pytest tests/ --cov=app --cov-report=term-missing -v
-
-# Run a specific test file
-.venv/bin/python -m pytest tests/test_matchers.py -v
+cargo test --workspace
+cargo llvm-cov --workspace --fail-under-lines 80
 ```
 
 Coverage must remain **above 80%**. PRs that reduce coverage below this threshold will not be merged.

@@ -12,6 +12,12 @@
 
     <!-- Status dot -->
     <StatusBadge :status="monitor.current_status" />
+    <SslMark
+      :enabled="monitor.ssl_check_enabled"
+      :valid="ssl.valid"
+      :days="ssl.days"
+      :warn-days="monitor.ssl_expiry_warning_days"
+    />
 
     <!-- Name & URL -->
     <RouterLink :to="`/monitors/${monitor.id}`" class="flex-1 min-w-0">
@@ -87,6 +93,7 @@ import type { Monitor } from '@/stores/monitors'
 import { useAuthStore } from '@/stores/auth'
 import { monitorsApi } from '@/api/monitors'
 import StatusBadge from './StatusBadge.vue'
+import SslMark from './SslMark.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 
 const props = defineProps<{ monitor: Monitor; selected: boolean }>()
@@ -94,12 +101,20 @@ const emit = defineEmits<{ 'toggle-select': []; pause: []; resume: []; delete: [
 const auth = useAuthStore()
 const confirmDelete = ref(false)
 const history = ref<{ id: number; status: string }[]>([])
+const ssl = ref<{ valid: boolean | null; days: number | null }>({ valid: null, days: null })
 const selectId = computed(() => `select-monitor-${props.monitor.id}`)
 
 onMounted(async () => {
   if (props.monitor.current_status !== 'pending') {
     try {
       const { data } = await monitorsApi.history(props.monitor.id, { limit: 40 })
+      const latest = data[0] as { is_ssl_valid?: boolean | null; ssl_expiry_days?: number | null } | undefined
+      if (latest) {
+        ssl.value = {
+          valid: latest.is_ssl_valid ?? null,
+          days: latest.ssl_expiry_days ?? null,
+        }
+      }
       history.value = data.reverse()
     } catch {
       // ignore

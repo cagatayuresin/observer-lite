@@ -11,11 +11,10 @@ Observer Lite is configured through environment variables. Most application sett
 
 | Variable | Required | Default | Description |
 | --- | --- | --- | --- |
-| `PORT` | No | `3000` | HTTP port used by Uvicorn inside the container. |
+| `PORT` | No | `3000` | HTTP port the process listens on. |
 | `SECRET_KEY` | Yes | none in Docker | Signing and encryption root secret. Use a long random value. |
 | `DATABASE_PATH` | No | `/data/observer.db` | SQLite database path. |
-| `DATABASE_URL` | No | `sqlite+aiosqlite:////data/observer.db` | Async SQLAlchemy database URL. |
-| `DEBUG` | No | `false` | Enables extra debug behavior when set to a boolean true value. |
+| `DEBUG` | No | `false` | Enables extra debug logging when set to a boolean true value. |
 
 ## Required Secret
 

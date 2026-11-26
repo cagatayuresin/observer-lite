@@ -10,14 +10,14 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/cagatayuresin/observer-lite/releases/tag/v0.2.3">
-    <img src="https://img.shields.io/badge/version-0.2.3-blue?style=flat-square" alt="Version 0.2.3" />
+  <a href="https://github.com/cagatayuresin/observer-lite/tree/0.3.0-alpha">
+    <img src="https://img.shields.io/badge/version-0.3.0--alpha.1-blue?style=flat-square" alt="Version 0.3.0-alpha.1" />
   </a>
   <a href="LICENSE">
     <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="MIT License" />
   </a>
   <img src="https://img.shields.io/badge/coverage-80%25-brightgreen?style=flat-square" alt="Test Coverage 80%" />
-  <img src="https://img.shields.io/badge/python-3.12-3776ab?style=flat-square&logo=python&logoColor=white" alt="Python 3.12" />
+  <img src="https://img.shields.io/badge/rust-stable-000000?style=flat-square&logo=rust&logoColor=white" alt="Rust" />
   <img src="https://img.shields.io/badge/vue-3-42b883?style=flat-square&logo=vue.js&logoColor=white" alt="Vue 3" />
   <a href="https://github.com/users/cagatayuresin/packages/container/package/observer-lite">
     <img src="https://img.shields.io/badge/docker-ghcr.io-2496ed?style=flat-square&logo=docker&logoColor=white" alt="Docker Image on GHCR" />
@@ -73,7 +73,6 @@ docker run -d \
   -v observer_data:/data \
   -e SECRET_KEY="$(openssl rand -hex 32)" \
   -e DATABASE_PATH="/data/observer.db" \
-  -e DATABASE_URL="sqlite+aiosqlite:////data/observer.db" \
   ghcr.io/cagatayuresin/observer-lite:latest
 ```
 
@@ -96,7 +95,6 @@ services:
     environment:
       SECRET_KEY: "change-this-to-a-long-random-secret-key"
       DATABASE_PATH: "/data/observer.db"
-      DATABASE_URL: "sqlite+aiosqlite:////data/observer.db"
       PORT: "3000"
 
 volumes:
@@ -117,7 +115,6 @@ All configuration is provided through environment variables.
 |---|---|---|---|
 | `SECRET_KEY` | **Yes** | `change-me-…` | HMAC secret for JWT signing and credential encryption. Use a random 32+ byte value. |
 | `DATABASE_PATH` | No | `/data/observer.db` | Path to the SQLite database file. |
-| `DATABASE_URL` | No | `sqlite+aiosqlite:////data/observer.db` | Full SQLAlchemy async connection URL. |
 | `PORT` | No | `3000` | Port the application listens on. |
 | `DEBUG` | No | `false` | Enable debug logging (`true` / `false`). |
 
@@ -185,24 +182,20 @@ Create a bot via [@BotFather](https://t.me/botfather), then provide the `bot_tok
 
 ```
 observer-lite/
-├── backend/          # Python 3.12 + FastAPI (async)
-│   └── app/
+├── crates/observer/  # Rust + Axum, one static binary
+│   └── src/
 │       ├── checkers/ # HTTP, Ping, SSL, Heartbeat probes
-│       ├── routers/  # REST API endpoints
-│       ├── scheduler/# APScheduler engine + per-monitor jobs
-│       ├── services/ # Business logic (incidents, notifications, retention)
-│       ├── sse/      # Server-Sent Events broadcaster
-│       └── utils/    # Crypto, pagination
-└── frontend/         # Vue 3 + Vite + Tailwind CSS + Pinia
+│       ├── routes/   # REST API
+│       ├── scheduler.rs
+│       └── services/ # Incidents, notifications, retention
+└── frontend/         # Vue 3 + Vite + Tailwind, embedded in the binary
 ```
 
 **Stack highlights:**
-- **Backend:** FastAPI, SQLAlchemy 2.0 async, aiosqlite, APScheduler 3.x (SQLAlchemyJobStore), aiosmtplib, python-jose, bcrypt, slowapi
-- **Frontend:** Vue 3, Vite, Tailwind CSS, Pinia, uPlot (lightweight charts, ~40 KB)
-- **Transport:** Server-Sent Events for real-time updates (no WebSocket needed)
-- **Packaging:** Multi-stage Docker build — Node.js build + Python 3.12-slim runtime, single image
-
-> **Important:** The application must run with `--workers 1`. The APScheduler and SSE broadcaster are in-memory singletons; multiple workers would duplicate checks and miss events.
+- **Backend:** Axum, Tokio, SQLx, SQLite WAL, rustls. One process owns the schedule.
+- **Frontend:** Vue 3, Vite, Tailwind CSS, Pinia, uPlot. Icons and fonts are bundled; the UI makes no network calls of its own.
+- **Transport:** Server-Sent Events for real-time updates.
+- **Packaging:** Multi-stage Docker build. The runtime image is Alpine plus one static binary. Node and Python are not in the running container.
 
 ---
 
@@ -240,20 +233,13 @@ Authentication is via **JWT Bearer token** or an **`obs_`-prefixed API key**.
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the full development guide including local setup, coding standards, and PR process.
 
 ```bash
-# Backend
-cd backend
-uv venv && uv pip install -e ".[dev]"
-alembic upgrade head
-uvicorn app.main:app --reload --workers 1
+# Frontend assets, then the binary (it embeds frontend/dist)
+cd frontend && npm ci && npm run build && cd ..
+cargo run --release
 
-# Frontend (separate terminal)
-cd frontend
-npm install
-npm run dev
-
-# Tests
-cd backend
-pytest tests/ --cov=app -q
+# Tests and the local quality gate (no push)
+cargo test --workspace
+./scripts/analyze.sh
 ```
 
 ---
@@ -272,12 +258,11 @@ ghcr.io/cagatayuresin/observer-lite:main
 Release tags include:
 
 ```text
-ghcr.io/cagatayuresin/observer-lite:0.2.3
-ghcr.io/cagatayuresin/observer-lite:v0.2.3
-ghcr.io/cagatayuresin/observer-lite:0.2
+ghcr.io/cagatayuresin/observer-lite:0.3.0-alpha.1
+ghcr.io/cagatayuresin/observer-lite:v0.3.0-alpha.1
 ```
 
-When pushing a Git tag, use the `v`-prefixed form that matches `VERSION`, for example `v0.2.3`.
+This branch is the alpha. A successful CI run builds the image and checks `/api/health`. It does not push to GHCR. An alpha tag publishes only `0.3.0-alpha.1` and `v0.3.0-alpha.1`. `latest` and `0.3` stay on the stable release.
 
 ---
 

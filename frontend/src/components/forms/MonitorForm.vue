@@ -157,7 +157,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, toRaw, watch } from 'vue'
 import type { Monitor } from '@/stores/monitors'
 import ToggleSwitch from '@/components/common/ToggleSwitch.vue'
 
@@ -201,15 +201,17 @@ const emit = defineEmits<{
 }>()
 
 // Two-way binding: reflect parent changes into local proxy without infinite loops
-const form = ref<FormModel>(structuredClone(props.modelValue))
+// structuredClone() cannot clone a Vue reactive Proxy directly (DataCloneError),
+// so unwrap to the raw object with toRaw() before cloning.
+const form = ref<FormModel>(structuredClone(toRaw(props.modelValue)))
 
 watch(() => props.modelValue, (v) => {
   if (JSON.stringify(v) !== JSON.stringify(form.value)) {
-    form.value = structuredClone(v)
+    form.value = structuredClone(toRaw(v))
   }
 }, { deep: true })
 
 watch(form, (v) => {
-  emit('update:modelValue', structuredClone(v))
+  emit('update:modelValue', structuredClone(toRaw(v)))
 }, { deep: true })
 </script>
